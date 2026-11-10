@@ -25,9 +25,10 @@
     folders: $('#folders'), scene: $('#scene'), cam: $('#cam'), sheet: $('#sheet'), doc: $('#doc'),
     rf: $('#rf'), rr: $('#rr'), rg: $('#rg'), rc: $('#rc'), seg: $('#seg'), thumb: $('#thumb'), steps: $('#steps'),
     sub: $('#sub'), subT: $('#subT'), skip: $('#skip'), panel: $('#panel'), calcard: $('#calcard'),
-    onec: $('#onec'), flies: $('#flies'), whole: $('#whole'), veil: $('#veil'), cur: $('#cur')
+    onec: $('#onec'), flies: $('#flies'), whole: $('#whole'), veil: $('#veil'), cur: $('#cur'), checks: $('#checks'), ckcur: $('#ckcur'), cks: null,
+    tool: $('#tool'), gate: $('#gate'), cur1: $('#cur1'), sw: $('#sw'), box: $('#box')
   };
-  var st = { doc: 0, act: 1, run: 0, timers: [], view: 'agent', started: false, vol: null, sent: false,
+  var st = { doc: 0, act: 1, run: 0, timers: [], view: 'agent', started: false, vol: null, sent: false, sels: [], stage: 1,
     fr: null, raf: 0, cam: null, camKey: 'full', cw: 0, ch: 0, H: 520, played: false };
 
   /* ---------- scheduler on a virtual clock (pauses in a hidden tab or off screen) ---------- */
@@ -84,10 +85,16 @@
   }
 
   /* ---------- document renderers (v6) ---------- */
+  var PII_LOCK = '<svg viewBox="0 0 12 14" aria-hidden="true"><rect x="1.5" y="6" width="9" height="7" rx="1.6" fill="currentColor"/><path d="M3.6 6V4.2a2.4 2.4 0 0 1 4.8 0V6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
   function pii(content, label, html) {
-    return '<span class="pii" data-l="' + esc(label) + '"><span class="raw">' + (html ? content : esc(content)) + '</span><span class="rd" aria-hidden="true"><em>' + esc(label) + '</em></span></span>';
+    /* v9-add: the closed fragment reads "скрыто" with a lock (light mint), never a grey bar with a field name */
+    return '<span class="pii" data-l="' + esc(label) + '"><span class="raw">' + (html ? content : esc(content)) + '</span><span class="rd" aria-hidden="true">' + PII_LOCK + '<em>скрыто</em></span></span>';
   }
-  function rich(v) { if (!Array.isArray(v)) return esc(v); return v.map(function (x) { return typeof x === 'object' ? pii(x.p, x.l) : esc(x); }).join(''); }
+  /* rich text: plain strings, personal data {p,l}, or a zone the agent reads {k,t} */
+  function rich(v) {
+    if (!Array.isArray(v)) return esc(v);
+    return v.map(function (x) { return typeof x !== 'object' ? esc(x) : x.k ? '<span class="kz" data-k="' + x.k + '">' + esc(x.t) + '</span>' : pii(x.p, x.l); }).join('');
+  }
   function stamp(lines) { return '<div class="stamp" aria-hidden="true"><span>' + lines + '</span></div>'; }
   function foot(d) {
     return '<div class="foot">' + d.sign.map(function (s) {
@@ -106,7 +113,7 @@
     if (d.codes) h += '<div class="top"><div>' + title + '</div><div class="codes">' + d.codes.map(function (c) { return '<span>' + esc(c[0]) + '</span><span>' + esc(c[1]) + '</span>'; }).join('') + '</div></div>';
     else h += title;
     h += d.head.map(function (r, i) { return '<div class="kv" data-k="head' + i + '"><span>' + esc(r[0]) + '</span><span>' + rich(r[1]) + '</span></div>'; }).join('');
-    if (d.basis) h += '<p class="basis">' + esc(d.basis) + '</p>';
+    if (d.basis) h += '<p class="basis"><span data-k="basis">' + esc(d.basis) + '</span></p>';
     var last = d.cols.length - 1;
     h += '<table><tr>' + d.cols.map(function (c, i) { return '<th class="' + colClass(c, i, -1) + '">' + esc(c) + '</th>'; }).join('') + '</tr>';
     h += d.rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td class="' + colClass(d.cols[i], i, last) + '">' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>';
@@ -221,7 +228,6 @@
   function renderDoc(d) { return d.kind === 'mail' ? renderMail(d) : d.kind === 'contract' ? renderContract(d) : d.kind === 'customs' ? renderCustoms(d) : renderTable(d); }
   function fieldEl(key) { return el.doc.querySelector('[data-k="' + key + '"]'); }
   function markTarget(key) { var t = fieldEl(key); return t ? (t.matches('.f') ? t : (t.querySelector('.f') || t)) : null; }
-  function errCo(d) { return d.callouts.filter(function (c) { return c.kind === 'err'; })[0]; }
 
   /* ---------- geometry: zones in sheet units from offsets (transforms do not affect them), cached per document ---------- */
   var zones = null;
@@ -242,7 +248,7 @@
   }
 
   /* ---------- camera: translate + scale of the sheet inside the camera window ---------- */
-  function measure() { st.cw = el.cam.clientWidth; st.ch = el.cam.clientHeight; st.H = el.sheet.offsetHeight; st.SW = el.sheet.offsetWidth; }
+  function measure() { st.cw = el.cam.clientWidth; st.ch = el.cam.clientHeight; st.H = el.sheet.offsetHeight; st.SW = el.sheet.offsetWidth; st.subH = el.sub.offsetHeight || 64; }
   function camOverview(zone) {
     var W = st.cw, H = st.ch, ph = phone(), SW = st.SW || 720;
     if (ph) { var sp = (W - 16) / SW; return { s: sp, x: 8, y: 8 }; }
@@ -250,6 +256,11 @@
       /* the mail sits in the left 54 % at its own size (its text is already large), no zoom */
       var mw = W * 0.54 - 30, sm = Math.min(1, (mw - 20) / SW, (H - 130) / st.H);
       return { s: sm, x: 20 + (mw - SW * sm) / 2, y: 4 };
+    }
+    if (zone === 'docs') {
+      /* v9: the whole sheet stands still in the left zone for the whole check; it ends 12 px above the subtitle */
+      var dw = W * 0.56 - 30, ds = Math.min((H - 16 - 22 - st.subH - 12) / st.H, (dw - 32) / SW);
+      return { s: ds, x: 20 + (dw - SW * ds) / 2, y: 16 };
     }
     if (zone === 'left') {
       var zw = W * 0.56 - 30, s1 = Math.min((H - 40) / st.H, (zw - 32) / SW);
@@ -325,15 +336,16 @@
   function frameOff() { cancelAnimationFrame(st.raf); el.rf.classList.remove('on', 'clay', 'pulse', 'spot'); st.fr = null; }
 
   /* ---------- flights (from v5/v6): a copy of a value leaves the mail along a light arc and lands in its 1C field ---------- */
-  function fly(from, to, text, done) {
+  function fly(from, to, text, done, left) {
     if (!from || !to || reduce || phone()) { if (done) done(); return; }
     var a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
     var n = document.createElement('div');
-    n.className = 'fly'; n.textContent = text;
+    n.className = 'fly' + (left ? ' big' : ''); n.textContent = text;
     el.flies.appendChild(n);
-    var w = Math.round(text.length * 10 + 36), h = 38;   /* estimated, no layout read of the new node */
+    var w = Math.round(text.length * (left ? 11 : 10) + 36), h = left ? 42 : 38;   /* estimated, no layout read of the new node */
     var x0 = a.left + Math.min(a.width / 2, 160) - w / 2, y0 = a.top + a.height / 2 - h / 2;
-    var x1 = b.right - w, y1 = b.top + b.height / 2 - h / 2;
+    /* v9 records are left-aligned: the copy lands on the start of the value line */
+    var x1 = left ? b.left - 12 : b.right - w, y1 = b.top + b.height / 2 - h / 2;
     var mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 60;
     var anim = n.animate([
       { transform: 'translate(' + x0 + 'px,' + y0 + 'px) scale(.9)', opacity: 0 },
@@ -371,7 +383,7 @@
     if (flash && !reduce) requestAnimationFrame(function () { fr.classList.add('flash'); });
   }
   /* the page heading and the step names belong to the document (the mail folder has its own) */
-  var H1_DEF = null, STEPS_DEF = ['Чтение', 'Проверка', 'Расчёт'];
+  var H1_DEF = null, STEPS_DEF = ['Вручную', 'Защита данных', 'Проверка', 'Расчёт'];
   function setHead(d, instant) {
     var h = $('.head');
     if (H1_DEF === null) H1_DEF = h.innerHTML;
@@ -464,98 +476,316 @@
     return sc;
   }
   function buildScript(d) {
-    if (d.kind === 'mail') return buildMail(d);
-    var sc = [], err = errCo(d), errKey = err && err.at;
-    sc.push({ tag: 'open', dur: 900, fn: function (fast) { camKey('full', fast); setSub('Открываю ' + d.acc, 'live', fast); } });
-
-    /* personal data, stops by lines of the sheet */
-    var list = $$('.pii', el.doc).map(function (n) { return { n: n, b: box(n) }; })
-      .sort(function (a, b) { return a.b.y - b.b.y || a.b.x - b.b.x; });
-    var rows = [];
-    list.forEach(function (p) { var r = rows[rows.length - 1]; if (r && Math.abs(p.b.y - r[0].b.y) < 10) r.push(p); else rows.push([p]); });
-    var total = list.length, k = 0;
-    rows.forEach(function (row) {
-      var rb = union(row.map(function (p) { return p.b; }));
-      row.forEach(function (p, j) {
-        var idx = ++k, first = j === 0, step = total > 6 ? 420 : 470;
-        sc.push({ tag: 'pii', dur: first ? 760 : step, fn: function (fast) {
-          if (first) camKey(rb, fast);
-          frameTo(p.b, fast ? 0 : (first ? 650 : step - 30));
-          if (idx === 1) setSub('Скрываю персональные данные · 0 из ' + total, 'live', fast);
-          wait(first ? 650 : step - 100, function () {
-            p.n.classList.add('masked');
-            setSub('Скрываю персональные данные · ' + idx + ' из ' + total, 'live', true);
-          }, fast);
+    /* v9-add: three stages — the employee by hand, data protection, the robot */
+    var robot = d.kind === 'mail' ? buildMail(d).filter(function (s) { return s.tag !== 'open' && s.tag !== 'pii'; }) : buildChecks(d);
+    return buildManual(d).concat(buildProtect(d), robot);
+  }
+  /* ---------- v9: the check of a document, two zones like the mail -> 1C run ----------
+     desktop: the whole sheet stands still on the left, the frame works on it, each found value flies into the forest panel
+     on the right and becomes a record (value + what was checked); phone: the camera zooms on the zone, one "current record" strip. */
+  var CK = {
+    tick: '<svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    cross: '<svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+  };
+  function ckHTML(kind, v, s) {
+    return '<span class="ci">' + CK[kind] + '</span><b class="cv">' + esc(v) + '</b><span class="cs">' + esc(s) + '</span>';
+  }
+  /* a record in the panel: created invisible (the flying copy needs its place), then 'in' (value) and 'ok' (check line + mark) */
+  function addCk(kind, v, s) {
+    var n = document.createElement('div');
+    n.className = 'ck ' + kind;
+    n.innerHTML = ckHTML(kind === 'err' ? 'cross' : kind, v, s);
+    el.cks.appendChild(n);
+    return n;
+  }
+  /* phone: one forest strip under the sheet with the current record */
+  function setCkCur(kind, v, s) {
+    el.ckcur.className = 'ckcur on ' + kind;
+    el.ckcur.innerHTML = ckHTML(kind === 'err' ? 'cross' : kind, v, s);
+  }
+  function renderChecks(d) {
+    el.checks.innerHTML = '<h2>Проверяю ' + esc(d.short || d.acc) + '</h2><div class="cks"></div>';
+    el.cks = $('.cks', el.checks);
+    el.ckcur.className = 'ckcur';
+    el.ckcur.innerHTML = '<span class="ci"></span><b class="cv">Проверяю ' + esc(d.short || d.acc) + '</b><span class="cs"></span>';
+  }
+  /* ---------- v9-add, stage 1 "Вручную": how an employee does it — a pointer that moves like a hand, typing with a typo ---------- */
+  function rng(seed) {
+    return function () { seed = (seed + 0x6D2B79F5) | 0; var t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  /* a node box in .sbox coordinates: read when the script is built (idle time or a click), never in rAF */
+  function relBox(n) {
+    var x = 0, y = 0, e = n;
+    while (e && e !== el.box) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; }
+    return { x: x, y: y, w: n.offsetWidth, h: n.offsetHeight };
+  }
+  function fmtMS(sec) { sec = Math.round(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
+  var CARET = '<span class="tx"></span><i class="caret"></i>';
+  /* the employee's tool: one component "a window with typed text" — calculator, notes, the HS code directory */
+  function renderTool(d) {
+    var m = d.man;
+    if (!m || m.tool === '1c') { el.tool.className = 'tool'; el.tool.innerHTML = ''; return; }
+    /* recognisable at a glance: a calculator with its keys, notes with a menu bar, a directory with a list of results */
+    var KEYS = ['C', '←', '%', '±', '7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '0', ',', '=', '+'];
+    var body = m.tool === 'calc' ? '<div class="tape"></div><div class="tl in1">' + CARET + '</div><div class="keys">' +
+        KEYS.map(function (k) { return '<b data-key="' + k + '"' + (/\d|,/.test(k) ? '' : ' class="op"') + '>' + k + '<i class="fl"></i></b>'; }).join('') + '</div>'
+      : m.tool === 'notes' ? '<div class="menu"><span>Файл</span><span>Правка</span><span>Формат</span><span>Вид</span></div><div class="area in1">' + CARET + '</div>'
+      : '<div class="srch in1"><i class="mg">' + I1C.find + '</i>' + CARET + '</div><ul class="res">' + (m.res || []).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+    el.tool.className = 'tool ' + m.tool;
+    el.tool.innerHTML = '<div class="wt"><span>' + esc(m.title) + '</span><i class="x">' + I1C.close + '</i></div><div class="wb">' + body + '</div>';
+  }
+  /* desktop: the tool window is exactly as tall as the sheet and starts at its top (from the cached camera, no layout read) */
+  function sizeTool() {
+    var on = !phone() && !st.mail && st.cam;
+    el.tool.style.top = on ? Math.round(st.cam.y) + 'px' : '';
+    el.tool.style.height = on ? Math.round(st.H * st.cam.s) + 'px' : '';
+  }
+  function renderGate(n) {
+    el.gate.innerHTML = '<span class="gl">' + CK.lock + '</span><b>Робот ещё не видит документ</b><span class="gc">Скрыто 0 из ' + n + '</span>';
+  }
+  /* typing: uneven 60-160 ms per key, one typo noticed and erased with Backspace */
+  function typePlan(text, r, withTypo) {
+    var out = [], t = 0, cur = '', cands = [], typo = -1;
+    for (var i = 1; i < text.length - 1; i++) if (/[0-9а-яёa-z]/i.test(text[i])) cands.push(i);
+    if (withTypo && cands.length) typo = cands[Math.floor(cands.length * (0.35 + r() * 0.3))];
+    for (var j = 0; j < text.length; j++) {
+      if (j === typo) {
+        var c = text[j], w = /\d/.test(c) ? String((+c + 1) % 10) : String.fromCharCode(c.charCodeAt(0) + 1);
+        t += 60 + r() * 60; out.push({ at: t, s: cur + w });
+        t += 200 + r() * 100; out.push({ at: t, s: cur });   /* notices it, Backspace */
+      }
+      /* uneven keys: mostly quick, now and then a longer one (60-160 ms) */
+      t += r() < 0.18 ? 120 + r() * 40 : 60 + r() * 45; cur += text[j]; out.push({ at: t, s: cur });
+    }
+    return { st: out, dur: Math.round(t) };
+  }
+  /* the pointer: an arc (quadratic curve), minimum-jerk speed (accelerate, brake), a small overshoot and return; transform only */
+  function curMove(a, b, ms, k, ib, fast, lin) {
+    var c = el.cur1;
+    c.classList.add('on');
+    if (fast || reduce || !a || !ms) { c.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px)'; c.classList.toggle('ib', !!ib); return; }
+    var dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || 1;
+    var cx = (a.x + b.x) / 2 - dy * k, cy = (a.y + b.y) / 2 + dx * k;
+    var ov = lin ? 0 : Math.min(9, 2 + dd * 0.025), ox = b.x + dx / dd * ov, oy = b.y + dy / dd * ov;
+    var fr = [], N = 16, end = ov ? 0.86 : 1;
+    for (var i = 0; i <= N; i++) {
+      var tt = i / N, u = lin ? tt * tt * (3 - 2 * tt) : tt * tt * tt * (10 - 15 * tt + 6 * tt * tt);
+      var px = (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * ox, py = (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * oy;
+      fr.push({ transform: 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px)', offset: tt * end });
+    }
+    if (ov) fr.push({ transform: 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px)', offset: 1 });
+    var an = c.animate(fr, { duration: ms, easing: 'linear', fill: 'forwards' });
+    wait(Math.round(ms * 0.7), function () { c.classList.toggle('ib', !!ib); });
+    an.onfinish = function () { c.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px)'; an.cancel(); };
+  }
+  function clickPulse() { $$('svg', el.cur1).forEach(function (s) { s.animate([{ transform: 'scale(1)' }, { transform: 'scale(.86)' }, { transform: 'scale(1)' }], { duration: 170 }); }); }
+  /* text selection on the source: blue, grows left to right under the pointer */
+  function selShow(b, fx0, fx1, ms, fast) {
+    var n = document.createElement('i');
+    n.className = 'sel';
+    n.style.cssText = 'left:' + (b.x + 4 + (b.w - 8) * fx0).toFixed(1) + 'px;top:' + (b.y + 2) + 'px;width:' + ((b.w - 8) * (fx1 - fx0)).toFixed(1) + 'px;height:' + (b.h - 4) + 'px';
+    el.sheet.appendChild(n); st.sels.push(n);
+    if (!fast && !reduce) n.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: ms, easing: 'cubic-bezier(.4,0,.6,1)' });
+  }
+  function buildManual(d) {
+    var m = d.man, r = rng(11 + st.doc * 17), ph = phone(), mail = d.kind === 'mail', acts = [], t = 0, pos = null;
+    var all = [];                                        /* sheet zones of the scene: on the phone the camera stands on them */
+    var cam = st.cam, off = relBox(el.cam);
+    function sp(b, fx, fy) { return { x: off.x + cam.x + (b.x + b.w * fx) * cam.s, y: off.y + cam.y + (b.y + b.h * fy) * cam.s }; }
+    function tp(n, fx, fy) { var b = relBox(n); return { x: b.x + b.w * fx, y: b.y + b.h * fy }; }
+    function act(fn, dt) { var at = t; acts.push({ at: at, fn: fn }); t += dt || 0; }
+    function mv(p, ib, pause) {
+      var from = pos, ms = from ? Math.round(Math.min(470, Math.max(230, 180 + Math.hypot(p.x - from.x, p.y - from.y) * 0.38))) : 0;
+      var k = (0.07 + r() * 0.13) * (r() < 0.5 ? -1 : 1);
+      act(function (fast) { curMove(from, p, ms, k, ib, fast); }, ms + (pause == null ? 150 + Math.round(r() * 150) : pause));
+      pos = p;
+    }
+    function sweep(b, fx0, fx1, fy, sel) {             /* reading along a line or dragging a selection */
+      var p0 = sp(b, fx0, fy), p1 = sp(b, fx1, fy);
+      mv(p0, true, 120);
+      var ms = Math.round(Math.min(540, 230 + (p1.x - p0.x) * 0.65));
+      act(function (fast) { if (sel) selShow(b, fx0, fx1, ms, fast); curMove(p0, p1, ms, 0.015, true, fast, true); }, ms + 90 + Math.round(r() * 90));
+      pos = p1;
+    }
+    function click() { act(function (fast) { if (!fast) clickPulse(); }, 60); }
+    var typoLeft = 1;                                    /* one typo per folder */
+    function type(get, text, done) {
+      var pl = typePlan(text, r, typoLeft-- > 0), at = t, prev = '';
+      pl.st.forEach(function (s) {
+        /* the calculator key of the typed symbol flashes (~120 ms); Backspace flashes "←"; the directory shows results while typing */
+        var key = s.s.length > prev.length ? s.s.slice(-1).replace('-', '−') : '←', len = s.s.length; prev = s.s;
+        acts.push({ at: at + Math.round(s.at), fn: function (fast) {
+          var n = get(); if (n) n.textContent = s.s;
+          if (m.tool === 'calc' && !fast) { var kb = $('[data-key="' + key + '"] .fl', el.tool); if (kb) kb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120 }); }
+          if (m.tool === 'tnved') $$('.res li', el.tool).forEach(function (li, i) { li.classList.toggle('on', len >= 4 + i * 3); });
         } });
       });
-    });
+      t += pl.dur + 80;
+      if (done) act(done, 50);
+    }
+    function on(n, v) { return function () { if (n) n.classList.toggle('tcur', v); }; }
+    function place(p, ib) { pos = p; act(function (fast) { curMove(null, p, 0, 0, ib, true); }); t += 150; }
 
-    /* reading: one stop per zone, the error zone is read during the check */
-    var stops = [], byKey = {};
-    d.fields.forEach(function (f) {
-      if (f[2] === errKey) return;
-      if (!byKey[f[2]]) { byKey[f[2]] = { key: f[2], names: [], vals: [] }; stops.push(byKey[f[2]]); }
-      byKey[f[2]].names.push(f[0]); byKey[f[2]].vals.push(f[1]);
-    });
-    stops.forEach(function (s) { s.z = box(s.key === 'title' ? markTarget(s.key) : fieldEl(s.key)); });
-    /* zones on neighbouring lines (title and date of a contract) are read in one stop */
-    stops = stops.reduce(function (acc, s) {
-      var l = acc[acc.length - 1];
-      var apart = l && s.z && l.z && (s.z.x >= l.z.x + l.z.w || s.z.x + s.z.w <= l.z.x);   /* side by side, not one under another */
-      if (apart && Math.abs(s.z.y - (l.z.y + l.z.h)) < 12 && s.z.h < 40 && l.z.h < 40) {
-        l.z = union([l.z, s.z]); l.names = l.names.concat(s.names); l.vals = l.vals.concat(s.vals); return acc;
+    var tx = function () { return $('.tx', el.tool); }, inp = $('.in1', el.tool);
+    if (m.tool === 'calc') {
+      var cells = $$('td.sum', el.doc).map(box);
+      all = cells;
+      cam = ph ? camFocus(union(cells)) : cam;
+      place(sp(cells[0], -2.2, 2.4), false);
+      m.type.forEach(function (s, i) {
+        mv(sp(cells[i], 0.74, 0.55), false, 170 + Math.round(r() * 90));
+        if (!ph) { mv(tp(inp, 0.55, 0.5), true, 80); click(); }
+        type(tx, s, function () { var tp0 = $('.tape', el.tool); tp0.insertAdjacentHTML('beforeend', '<div>' + esc(s) + '</div>'); tx().textContent = ''; });
+      });
+      act(function (fast) { setSub(m.more, '', fast); });
+      /* ★ the last move (towards the third row) runs while the stopwatch already spins: the stage ends on the move */
+      var t9 = t; mv(sp(cells[2], 0.7, 0.55), false, 0); t = t9 + 120;
+    } else if (m.tool === 'notes') {
+      var c0 = box(fieldEl('c0').querySelector('.f')), c1 = box(fieldEl('c1').querySelector('.f'));
+      all = [c0, c1]; cam = ph ? camFocus(union(all)) : cam;
+      place(sp(c0, 0.1, -1.5), true);
+      /* reading line by line: the first line of п. 1 and of п. 2 */
+      sweep(c0, 0.02, 0.97, 0.5 / Math.max(1, Math.round(c0.h / 19)));
+      sweep(c1, 0.02, 0.9, 0.5 / Math.max(1, Math.round(c1.h / 19)));
+      if (!ph) { mv(tp(inp, 0.3, 0.3), true, 70); click(); }
+      type(tx, m.type[0]);
+      act(function (fast) { setSub(m.more, '', fast); });
+      t += 200;
+    } else if (m.tool === 'tnved') {
+      var f31 = fieldEl('b31').querySelector('.f'), b31 = box(f31), len = f31.textContent.length;
+      all = [b31]; cam = ph ? camFocus(b31) : cam;
+      place(sp(b31, 0.3, -2.5), false);
+      sweep(b31, 0, Math.min(1, 17.5 / len), 0.5, true);
+      if (!ph) { mv(tp(inp, 0.4, 0.5), true, 120); click(); }
+      type(tx, m.type[0]);
+      act(function (fast) { setSub(m.more, '', fast); });
+      if (!ph) { var li0 = $('.res li', el.tool); if (li0) mv(tp(li0, 0.25, 0.5), false, 80); }   /* to the first result */
+      t += 300;
+    } else {
+      /* the mail: select the client in the signature -> the 1C field -> type -> pick from the list -> the contract number */
+      var bc = box(fieldEl('client')), bk = box(fieldEl('contract'));
+      all = [bc, bk]; cam = ph ? camFocus(union(all)) : cam;
+      var fc = el.onec.querySelector('[data-f="client"] .in'), fk = el.onec.querySelector('[data-f="contract"] .in');
+      var vc = $('.v', fc), vk = $('.v', fk);
+      vc.innerHTML = CARET; vk.innerHTML = CARET;
+      var dd = document.createElement('div'); dd.className = 'dd'; dd.textContent = m.pick; fc.appendChild(dd);
+      place(sp(bc, 0.5, -3), false);
+      sweep(bc, 0, 1, 0.55, true);
+      if (ph) {
+        act(function () { setCur('client', CARET); $('.fr', el.cur).classList.add('tcur'); });
+        type(function () { return $('.tx', el.cur); }, m.type[0], function () { setCur('client', esc(m.pick)); });
+        mv(sp(bk, 0.5, 0.6), true, 250);
+        act(function () { setCur('contract', CARET); $('.fr', el.cur).classList.add('tcur'); });
+        type(function () { return $('.tx', el.cur); }, m.type[1]);
+      } else {
+        mv(tp(fc, 0.3, 0.55), true, 100); click(); act(on(fc, true));
+        type(function () { return $('.tx', vc); }, m.type[0], function () { dd.classList.add('on'); });
+        mv(tp(dd, 0.35, 0.5), false, 80); click();
+        act(function () { fc.classList.remove('tcur'); dd.classList.remove('on'); vc.textContent = m.pick; fc.closest('.fr').classList.add('got'); }, 120);
+        mv(sp(bk, 0.5, 0.6), true, 180);
+        mv(tp(fk, 0.3, 0.55), true, 70); click(); act(on(fk, true));
+        type(function () { return $('.tx', vk); }, m.type[1]);
       }
-      acc.push(s); return acc;
-    }, []);
-    stops.forEach(function (s) {
-      var z = s.z;
-      sc.push({ tag: 'read', key: s.key, dur: 1100, fn: function (fast) {
-        camKey(z, fast); frameTo(z, fast ? 0 : 550);
-        setSub('Читаю: ' + s.names.join(', ') + ' — ' + s.vals.join(', '), 'live', fast);
+      act(function (fast) { setSub(m.more, '', fast); });
+      t += 200;
+    }
+    var dur = t, zU = all.length ? union(all) : null;
+    var sc = [{ tag: 'man', dur: dur, fn: function (fast) {
+      markStage(1);
+      if (ph && zU) camKey(zU, true);
+      setSub('Работает человек', '', fast);
+      /* the stopwatch runs fast: ~1:30 for the 5 s of the stage */
+      for (var i = 0; i <= dur; i += 100) (function (ms) { wait(ms, function () { el.sw.textContent = 'Сотрудник · ' + fmtMS(ms / 1000 * 18); }, fast); })(i);
+      acts.forEach(function (a) { wait(a.at, function () { a.fn(fast); }, fast); });
+    } }];
+    var full = d.calc.min * 60, from = dur / 1000 * 18;
+    sc.push({ tag: 'mend', dur: 1300, fn: function (fast) {
+      for (var i = 1; i <= 6; i++) (function (j) { wait(j * 100, function () { el.sw.textContent = 'Сотрудник · ' + fmtMS(from + (full - from) * j / 6); }, fast); })(i);
+      wait(600, function () { setSub('Вручную: около ' + d.calc.min + ' ' + plural(d.calc.min, 'минуты', 'минут', 'минут') + ' ' + m.per, 'done', fast); }, fast);
+    } });
+    return sc;
+  }
+  /* ---------- v9-add, stage 2 "Защита данных": personal data are closed before the robot gets the document ---------- */
+  function buildProtect(d) {
+    var sc = [], ph = phone();
+    var list = $$('.pii', el.doc).map(function (n) { return { n: n, b: box(n) }; }).sort(function (a, b) { return a.b.y - b.b.y || a.b.x - b.b.x; });
+    var N = list.length, step = Math.round(Math.min(350, 1900 / Math.max(1, N)));
+    var gc = function (k) { var g = $('.gc', el.gate); if (g) g.textContent = 'Скрыто ' + k + ' из ' + N; };
+    sc.push({ tag: 'prot', dur: 350, fn: function (fast) {
+      markStage(2); frameOff();
+      el.cur1.classList.remove('on');
+      st.sels.forEach(function (n) { n.remove(); }); st.sels = [];
+      if (d.kind === 'mail') { renderOnec(d); if (ph) setCur(d.onec.top[0][0], '', false); }   /* the robot gets an empty order */
+      if (ph) camKey('full', true);
+      gc(0);
+      setSub('Скрываю данные человека', 'live', fast);
+    } });
+    list.forEach(function (p, i) {
+      sc.push({ tag: 'pii', dur: step, fn: function (fast) {
+        p.n.classList.add('pre');
+        wait(200, function () { p.n.classList.remove('pre'); p.n.classList.add('masked'); gc(i + 1); }, fast);
       } });
     });
+    sc.push({ tag: 'pdone', dur: 800, fn: function (fast) { setSub('Данные скрыты. Робот их не получит', 'done', fast); } });
+    sc.push({ tag: 'pgo', dur: 600, fn: function (fast) {
+      if (d.kind !== 'mail') {
+        var s = 'Скрыты до чтения: ' + N;
+        if (ph) setCkCur('lock', 'Персональные данные', s); else addCk('lock', 'Персональные данные', s).classList.add('in', 'ok');
+      }
+      markStage(3);                                     /* the gate opens: the dashed outline becomes the robot's zone */
+      setSub('Документ передан роботу', 'live', fast);
+    } });
+    return sc;
+  }
+  function buildChecks(d) {
+    /* v9-add: personal data are closed in stage 2 (not by the robot); the lock record is in the panel from the stage's first frame */
+    var sc = [], ph = phone();
 
-    var et = errKey && markTarget(errKey), eb = box(et);
-    function hitNow(fast) {
-      el.rf.classList.add('clay');
-      if (et) et.classList.add('hit', 'on');
-      if (!fast) { el.rf.classList.remove('pulse'); requestAnimationFrame(function () { el.rf.classList.add('pulse'); }); }
-    }
-    if (d.kind === 'table') {
-      /* the column frame sits 3 px inside the "Sum" cells, so the next column is never covered */
-      var cells = $$('td.sum', el.doc), cb = cells.map(function (c) { var b = box(c); return { x: b.x + 9, y: b.y + 2, w: b.w - 18, h: b.h - 4 }; }), ub = union(cb);
-      var first = digits(cells[0].textContent), final = digits(d.verdict.rows[0][1]);
-      sc.push({ tag: 'sum', dur: 1200, fn: function (fast) {
-        camKey(ub, fast); frameTo(cb[0], fast ? 0 : 500);
-        setSub('Складываю строки: ' + grp(first) + ' ₽', 'live', fast);
-        wait(520, function () {
-          frameTo(ub, fast ? 0 : 650);              /* the frame stretches down the column, like a mouse selection */
-          if (fast) el.subT.textContent = 'Складываю строки: ' + grp(final) + ' ₽';
-          else countText(el.subT, first, final, 600, 'Складываю строки: {n} ₽');
+    /* records: frame on the zone, hold 0.25 s, the value flies into the panel, then the check line and the mark */
+    var cells = $$('td.sum', el.doc).map(function (c) { var b = box(c); return { x: b.x + 9, y: b.y + 2, w: b.w - 18, h: b.h - 4 }; });
+    d.checks.forEach(function (c, ci) {
+      var col = c.k[0] === '@sum';
+      var parts = c.k.filter(function (x) { return x !== '@sum'; }).map(function (x) { return box(fieldEl(x)); });
+      var z = union((col ? cells : []).concat(parts));
+      var src = fieldEl(c.k[c.k.length - 1] === '@sum' ? null : c.k[c.k.length - 1]) || $$('td.sum', el.doc).pop();
+      var err = !!c.err, kind = err ? 'err' : 'tick', fly0 = c.f || c.v;
+      var reach = col ? 1100 : 650;                    /* frame arrives (and, for a column, stretches), then holds */
+      sc.push({ tag: err ? 'err' : col ? 'col' : 'rec', dur: err ? 2700 : col ? 1900 : 1400, fn: function (fast) {
+        setSub(col ? c.say.replace('{n}', grp(digits(cells.length ? $$('td.sum', el.doc)[0].textContent : 0))) : c.say, 'live', fast);
+        if (ph) camKey(z, fast);
+        if (col) {
+          frameTo(cells[0], fast ? 0 : 400);
+          wait(450, function () {
+            frameTo(z, fast ? 0 : 600);                 /* the frame stretches down the column, like a mouse selection */
+            if (fast) el.subT.textContent = c.say.replace('{n}', grp(digits(c.v)));
+            else countText(el.subT, digits($$('td.sum', el.doc)[0].textContent), digits(c.v), 600, c.say);
+          }, fast);
+        } else frameTo(z, fast ? 0 : 400);
+        if (err) wait(400, function () {
+          el.rf.classList.add('clay');
+          var et = markTarget(c.k[0]); if (et) et.classList.add('hit', 'on');
+          if (!fast) { el.rf.classList.remove('pulse'); requestAnimationFrame(function () { el.rf.classList.add('pulse'); }); }
+        }, fast);
+        wait(reach, function () {
+          var land = function () {
+            if (ph) setCkCur(kind, c.v, c.s);
+            else n.classList.add('in');
+            if (err) setSub(d.say.err, 'err', fast);
+            wait(300, function () { if (!ph) n.classList.add('ok'); }, fast);
+          };
+          if (ph) { land(); return; }
+          var n = addCk(kind, c.v, c.s);
+          if (fast) land(); else fly(src, $('.cv', n), fly0, land, true);
         }, fast);
       } });
-      sc.push({ tag: 'total', dur: 1100, fn: function (fast) {
-        camKey(eb, fast); frameTo(eb, fast ? 0 : 550);
-        setSub(d.say.total + ' ' + d.verdict.rows[1][1], 'live', fast);
-        wait(450, function () { el.rf.classList.add('clay'); }, fast);
-      } });
-      sc.push({ tag: 'err', dur: 1600, fn: function (fast) { hitNow(fast); setSub(d.say.err, 'err', fast); } });
-    } else {
-      if (d.say.pre) {
-        var pb = box(fieldEl(d.say.pre));
-        sc.push({ tag: 'pre', dur: 900, fn: function (fast) { camKey(pb, fast); frameTo(pb, fast ? 0 : 550); } });
-      }
-      sc.push({ tag: 'err', dur: 1900, fn: function (fast) {
-        camKey(eb, fast); frameTo(eb, fast ? 0 : 500);
-        wait(420, function () { hitNow(fast); setSub(d.say.err, 'err', fast); }, fast);
-      } });
-    }
+    });
     sc.push({ tag: 'end', dur: 0, fn: function (fast) { act2(!fast); } });
     return sc;
   }
   /* play the script, or replay it instantly up to a tag (deep links, skip) */
-  function play(stopTag, stopIdx) {
-    var d = D(), sc = (st.script && st.script.doc === st.doc && !stopTag) ? st.script.sc : buildScript(d);
+  function play(stopTag, stopIdx, startTag) {
+    var d = D(), sc = (st.script && st.script.doc === st.doc && !stopTag && !startTag) ? st.script.sc : buildScript(d);
     st.script = null;
     if (stopTag) {
       var seen = 0;
@@ -566,20 +796,30 @@
       }
       return;
     }
+    /* v9-add: a click on a later stage passes the earlier ones instantly and plays from that stage */
+    var i0 = 0;
+    if (startTag) while (i0 < sc.length && sc[i0].tag !== startTag) { sc[i0].fn(true); i0++; }
     var t = 0;
-    sc.forEach(function (s) { later(function () { s.fn(false); }, t); t += s.dur; });
+    sc.slice(i0).forEach(function (s) { later(function () { s.fn(false); }, t); t += s.dur; });
     st.played = true;
     prebuild2();
   }
 
   /* ---------- acts ---------- */
-  function setSteps(n) {
-    st.act = n;
+  /* v9: four steps (Вручную · Защита данных · Проверка · Расчёт); act 1 holds the first three stages, the verdict ends step 3 */
+  function markStage(k) {
+    st.stage = k;
+    el.scene.classList.toggle('st-man', st.act === 1 && k === 1);
+    el.scene.classList.toggle('st-prot', st.act === 1 && k === 2);
     $$('li', el.steps).forEach(function (li) {
       var s = +li.dataset.s;
-      li.classList.toggle('on', s === n); li.classList.toggle('done', s < n);
-      li.querySelector('.n').innerHTML = s < n ? ICON.check : String(s);
+      li.classList.toggle('on', s === k); li.classList.toggle('done', s < k);
+      li.querySelector('.n').innerHTML = s < k ? ICON.check : String(s);
     });
+  }
+  function setSteps(n) {
+    st.act = n;
+    markStage(n === 1 ? 1 : n === 2 ? 3 : 4);
     el.scene.classList.toggle('act2', n === 2);
     el.scene.classList.toggle('act3', n === 3);
   }
@@ -589,6 +829,8 @@
     el.panel.innerHTML = '<div class="pin" style="display:contents">' +
       '<h2>' + esc(d.verdict.title) + '</h2><p class="big' + (d.kind === 'mail' ? ' ok' : '') + '" id="big">' + esc(d.big) + '</p>' +
       '<p class="why">' + esc(d.why) + '</p>' +
+      /* v9-add: by hand vs the robot (calc.min and time) */
+      '<div class="vs"><div><span>Вручную</span><b>' + d.calc.min + ' мин</b></div><div class="rb"><span>Робот</span><b>' + fmt1(d.time) + ' с</b></div></div>' +
       '<p class="cap">Дальше без человека</p>' +
       '<ul class="acts">' + d.acts.map(function (a) { return '<li>' + ICON.check + '<span>' + esc(a) + '</span></li>'; }).join('') + '</ul>' +
       (d.note ? '<p class="note">' + esc(d.note) + '</p>' : '') +
@@ -619,7 +861,9 @@
     el.rf.classList.add('spot');
     el.rf.classList.toggle('soft', whole);
     el.sheet.classList.toggle('slow', !!slow);          /* the automatic pull-back takes 1 s */
-    camKey(whole ? 'left' : st.ev, instant);
+    var dk = !phone() && !st.mail;                        /* v9 desktop documents: the whole sheet is the check position */
+    if (dk && !whole) frameTo(st.ev, instant ? 0 : 400);  /* the close-up takes the whole evidence into the frame */
+    camKey(whole ? (dk ? 'docs' : 'left') : st.ev, instant);
   }
   /* the verdict panel is built ahead in idle time; the transition only switches classes and moves the camera */
   function prebuild2() {
@@ -635,15 +879,20 @@
   function fitPanel() {
     if (st.act !== 2) return;
     var items = $$('.pin > *', el.panel);
+    el.panel.classList.remove('compact', 'tight', 'tight2');
+    fitBig();
     if (items.length && !phone()) {
       var over = function () {
         var r = el.panel.getBoundingClientRect(), cs = getComputedStyle(el.panel);
         return items[items.length - 1].getBoundingClientRect().bottom - items[0].getBoundingClientRect().top > r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) + 2;
       };
-      el.panel.classList.remove('compact', 'tight');
-      if (over()) { el.panel.classList.add('compact'); if (over()) el.panel.classList.add('tight'); }
+      /* ★ everything stays inside the panel: tighter spacing, then no explanation line, then a smaller number (to 64), then smaller gaps */
+      if (over()) el.panel.classList.add('compact');
+      if (over()) el.panel.classList.add('tight');
+      var big = $('#big');
+      if (big) for (var fs = parseFloat(getComputedStyle(big).fontSize) - 8; over() && fs >= 64; fs -= 8) big.style.fontSize = fs + 'px';
+      if (over()) el.panel.classList.add('tight2');
     }
-    fitBig();
   }
   /* ★ the big number is never cut: measured by its final text (not the counting one), the size drops until it fits the panel width */
   var bigCtx = null;
@@ -666,9 +915,15 @@
          so the later pull-back changes no layout (CLS 0) */
       if (!st.mail && st.SW) { el.cam.style.height = Math.round(st.H * (st.cw - 16) / st.SW + 16) + 'px'; measure(); }
     }
-    if (!st.mail) {
-      /* the verdict starts as a close-up of the evidence, held by the spotlight, with a clay frame;
-         ~0.6 s after the third tick the camera pulls back to the whole sheet (the frame stays on the evidence) */
+    if (!st.mail && !phone()) {
+      /* v9 desktop: the sheet stays whole where it stood, the clay frame stays on the error, the veil softens to .4;
+         the records leave the panel and the verdict appears in their place (CSS); "Крупно" zooms on the evidence */
+      if (st.evDoc !== st.doc) { st.ev = evidence(d); st.evDoc = st.doc; }
+      el.rf.classList.add('clay', 'on');
+      st.userWhole = true;
+      if (q.get('close') === '1') setWhole(false, true); else setWhole(true, true, false, true);
+    } else if (!st.mail) {
+      /* phone (as v8): a close-up of the evidence, ~0.6 s after the third tick the camera pulls back to the whole sheet */
       if (st.evDoc !== st.doc) { st.ev = evidence(d); st.evDoc = st.doc; }
       el.rf.classList.add('clay');
       frameTo(st.ev, anim ? 600 : 0);
@@ -716,7 +971,7 @@
       '<div class="rng" id="rng"><i></i><input type="range" id="vol" min="' + c.lo + '" max="' + c.hi + '" step="' + c.step + '" value="' + n + '"></div>' +
       '<div class="c-big"><b id="hrs"></b><span>часов в год вернётся команде</span></div>' +
       '<p class="c-st" id="fte"></p>' +
-      '<div class="cmp" id="cmp"><span>' + esc(c.hand || ('Вручную — ' + c.min + ' мин')) + '</span><span class="tr"><i></i></span><span>Агент — ' + fmt1(d.time) + ' с</span><span class="tr me"><i></i></span></div>';
+      '<div class="cmp" id="cmp"><span>' + esc(c.hand || ('Вручную — ' + c.min + ' мин')) + '</span><span class="tr"><i></i></span><span>Робот — ' + fmt1(d.time) + ' с</span><span class="tr me"><i></i></span></div>';
     updCalc(true);
     setTimeout(function () { var m = $('#cmp'); if (m) m.classList.add('grow'); }, reduce ? 0 : 200);
   }
@@ -730,7 +985,7 @@
     $('#rng').style.setProperty('--p', (n - d.calc.lo) / (d.calc.hi - d.calc.lo));
   }
   function formHTML() {
-    return '<div class="pin" style="display:contents"><h2>Расчёт для вашей компании</h2><p class="s">Пришлём срок окупаемости и три первых сценария</p>' +
+    return '<div class="pin" style="display:contents"><h2>Запустите робота на вашу компанию</h2><p class="s lead2">Он изучит её по открытым источникам и пришлёт на почту расчёт окупаемости и три первых сценария</p>' +
       '<form id="leadForm" novalidate>' +
         '<div class="fl"><label class="sr" for="inn">ИНН или название компании</label><div class="ac" id="ac">' +
           '<input class="inp" id="inn" name="company" placeholder="ИНН или название компании" autocomplete="organization" enterkeyhint="next" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="acp">' +
@@ -738,10 +993,18 @@
         '<div class="fl"><label class="sr" for="mail">Рабочий e-mail</label><input class="inp" id="mail" name="email" type="email" placeholder="Рабочий e-mail" inputmode="email" autocomplete="email" enterkeyhint="send"><p class="etx" id="mailE"></p></div>' +
         '<label class="chk" for="agree"><input type="checkbox" id="agree" required><span>Согласен на обработку <a href="' + esc(CFG.policyUrl || '#') + '" target="_blank" rel="noopener">персональных данных</a></span></label><p class="etx" id="agreeE"></p>' +
         '<p class="etx" id="sendE" role="alert"></p>' +
-        '<button class="btn" type="submit"><span>Получить расчёт</span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></button>' +
+        '<button class="btn" type="submit"><span>Запустить робота →</span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></button>' +
       '</form></div>';
   }
-  function sentHTML() { return '<div class="sent" role="status">' + ICON.big + '<h2>Готово. Расчёт придёт на почту в течение рабочего дня.</h2></div>'; }
+  /* after sending: the robot's work in the language of the check records; steps 2 and 3 get no ticks (they run after sending) */
+  function sentHTML() {
+    var c = st.lead || { name: 'Ваша компания', meta: '' };
+    return '<div class="sent2" role="status"><h2>Робот запущен</h2><div class="cks">' +
+      '<div class="ck in ok tick"><span class="ci">' + CK.tick + '</span><b class="cv">' + esc(c.name) + '</b><span class="cs">' + esc(c.meta || 'Компания найдена') + '</span></div>' +
+      '<div class="ck in ok run"><span class="ci"><i class="ring"></i></span><b class="cv">Изучаю открытые источники</b></div>' +
+      '<div class="ck in ok wait"><span class="ci"><i class="dot0"></i></span><b class="cv">Готовлю расчёт и три сценария</b></div>' +
+      '</div><p class="fin">Расчёт придёт на почту в течение рабочего дня</p></div>';
+  }
 
   /* ---------- lead form (v6) ---------- */
   function bindLead() {
@@ -796,6 +1059,7 @@
       var d = D(), name = inp.value.trim();
       var payload = { company: picked ? picked.name : name, inn: picked ? picked.inn : (/^\d{10}(\d{2})?$/.test(name) ? name : ''),
         email: mail.value.trim(), doc: d.id, volume: st.vol, hoursPerYear: hoursOf(d, st.vol), page: location.href.split('#')[0], utm: utm() };
+      st.lead = { name: picked ? picked.name : name, meta: picked && picked.meta ? picked.meta : '' };
       var btn = form.querySelector('.btn'); btn.disabled = true; btn.classList.add('busy');
       var t0 = Date.now();
       function done() { setTimeout(function () { st.sent = true; goal('hp_lead_sent'); el.panel.innerHTML = sentHTML(); }, Math.max(0, (reduce ? 0 : 900) - (Date.now() - t0))); }
@@ -839,7 +1103,7 @@
     var top = plate.getBoundingClientRect().top + window.scrollY + el.scene.offsetTop;
     el.scene.style.height = Math.max(460, Math.min(800, window.innerHeight - top - 12)) + 'px';
   }
-  function openDoc(i, mode) {
+  function openDoc(i, mode, from) {
     stopAll();
     st.doc = i; st.vol = null; st.sent = false; zones = null; st.evDoc = -1;
     var d = DOCS[i];
@@ -853,14 +1117,19 @@
     if (st.mail) { renderOnec(d); setCur(d.onec.top[0][0], '', false); } else { el.onec.innerHTML = ''; el.onec.style.zoom = ''; }
     setHead(d, mode !== 'play');
     el.panel.innerHTML = ''; el.calcard.innerHTML = ''; st.pre2 = -1;
+    if (st.mail) { el.checks.innerHTML = ''; el.ckcur.className = 'ckcur'; } else renderChecks(d);
     el.cam.style.height = '';
     measure();
     if (st.mail) zoomOnec();
-    camKey(st.mail ? 'mail' : 'full', true);
-    setSub('Открываю ' + DOCS[i].acc, mode === 'play' ? 'live' : '', true);
+    camKey(st.mail ? 'mail' : phone() ? 'full' : 'docs', true);   /* v9: on desktop the sheet stands in the left zone from the start */
+    /* v9-add stages: the employee's tool, the gate, the pointer and the stopwatch start clean */
+    renderTool(d); sizeTool(); renderGate($$('.pii', el.doc).length);
+    st.sels.forEach(function (n) { n.remove(); }); st.sels = [];
+    el.cur1.classList.remove('on', 'ib'); el.sw.textContent = '';
+    setSub('Работает человек', '', true);
     if (mode === 'play') {
       if (!reduce) { el.sheet.style.opacity = '0'; requestAnimationFrame(function () { el.sheet.style.opacity = ''; }); }
-      play();
+      play(null, null, from);
     }
   }
   function skipToVerdict() { stopAll(); play('end'); act2(false); }
@@ -874,8 +1143,10 @@
   });
   el.steps.addEventListener('click', function (e) {
     var li = e.target.closest('li'); if (!li) return;
+    /* v9: a click on a stage starts it from the beginning (the earlier stages are passed instantly); 4 = the calculation */
     var s = +li.dataset.s;
-    if (s === 1) openDoc(st.doc, 'play'); else if (s === 2) { if (st.act === 1) skipToVerdict(); else { openDoc(st.doc); play('end'); act2(false); } } else act3();
+    if (s === 4) act3();
+    else openDoc(st.doc, 'play', s === 1 ? null : s === 2 ? 'prot' : 'pgo');
   });
   el.skip.addEventListener('click', skipToVerdict);
   /* a click before the automatic pull-back cancels it: from then on only the button drives the camera */
@@ -892,7 +1163,7 @@
   var rT = 0;
   window.addEventListener('resize', function () {
     clearTimeout(rT);
-    rT = setTimeout(function () { sizeScene(); measure(); camKey(st.camKey, true); placeThumb(); fitPanel(); zoomOnec(); if (st.mail) fitOnecTitle(); }, 80);
+    rT = setTimeout(function () { sizeScene(); measure(); camKey(st.camKey, true); placeThumb(); fitPanel(); zoomOnec(); sizeTool(); if (st.mail) fitOnecTitle(); }, 80);
   });
   document.addEventListener('visibilitychange', function () { clock.hidden = document.hidden; updPause(); });
   if ('IntersectionObserver' in window) {
@@ -906,14 +1177,19 @@
   st.doc = doc0; renderFolders(); sizeScene();
   openDoc(doc0);
   if (hold) {
-    var idx = hold === 'pii' ? 1 : 0, tag = hold;
-    if (hold === 'read') { var keys = buildScript(D()).filter(function (s) { return s.tag === 'read'; }).map(function (s) { return s.key; }); idx = Math.max(0, keys.indexOf('head0')); }
+    /* v9 tags: pii, lock, rec (i = which record), col, err; 'read' = the first record */
+    var tag = hold === 'read' ? 'rec' : hold, idx = q.has('i') ? +q.get('i') : (hold === 'pii' ? 1 : 0);
     play(tag, idx);
-    setSub(el.subT.textContent, hold === 'err' ? 'err' : 'live', true);
+    setSub(el.subT.textContent, hold === 'err' ? 'err' : (hold === 'pdone' || hold === 'mend') ? 'done' : hold === 'man' ? '' : 'live', true);
   } else if (stage0 >= 2 || (reduce && !stage0)) {
     play('end'); act2(false);
     if (q.get('whole') === '1' && !st.mail) setWhole(true, true);
-    if (stage0 === 3) { if (q.get('sent') === '1') st.sent = true; act3(); if (q.has('lead') && window.HP_LEAD_DEMO) window.HP_LEAD_DEMO(q.get('lead')); }
+    if (stage0 === 3) {
+      if (q.get('sent') === '1') {
+        st.sent = true;
+        var co = COS.filter(function (c) { return c.name === q.get('lead'); })[0];
+        if (co) st.lead = { name: co.name, meta: co.meta };
+      } act3(); if (q.has('lead') && window.HP_LEAD_DEMO) window.HP_LEAD_DEMO(q.get('lead')); }
   } else if (stage0 === 1) { play('end'); setSub('Прочитано за ' + fmt1(D().time) + ' с', 'done'); }
   else {
     /* the script (zone geometry) is prepared in idle time before the run starts */
