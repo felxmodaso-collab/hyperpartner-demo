@@ -1171,7 +1171,9 @@
   }
 
   /* ---------- start. Deep links: ?doc=0..3&stage=1..3&static=1&view=orig&lead=text&n=number&sent=1&hold=pii|read|sum|total|err ---------- */
-  var doc0 = Math.min(DOCS.length - 1, Math.max(0, +q.get('doc') || 0));
+  /* ?doc= takes an id (invoice, mail, torg12, contract, customs) or a number; the page opens on the invoice by default */
+  var docQ = q.get('doc') || '', byId = DOCS.map(function (x) { return x.id; }).indexOf(docQ);
+  var doc0 = byId > -1 ? byId : Math.min(DOCS.length - 1, Math.max(0, +docQ || 0));
   var stage0 = +q.get('stage') || 0, hold = q.get('hold');
   if (q.has('n')) st.vol = +q.get('n');
   st.doc = doc0; renderFolders(); sizeScene();
