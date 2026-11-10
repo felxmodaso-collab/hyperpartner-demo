@@ -102,6 +102,7 @@ a{color:inherit}
 .sheet{position:absolute;left:0;top:0;width:720px;min-height:520px;border-radius:var(--r-6);background:var(--sheet);box-shadow:var(--shadow-sheet);transform-origin:0 0;transition:opacity var(--d-2) var(--ease)}
 /* will-change only while the camera travels: a still sheet is re-rasterised sharp at the focus scale */
 .sheet.moving{transition:transform var(--d-3) var(--ease),opacity var(--d-2) var(--ease);will-change:transform}
+.sheet.moving.slow{transition-duration:1s,var(--d-2)}
 .scene.act3 .sheet{opacity:0}
 
 /* subtitle: one forest capsule at the bottom of the stage */
@@ -305,6 +306,8 @@ a{color:inherit}
 /* ---------- spotlight: a white veil over the sheet with a cut-out along the frame (same SVG, same rAF) ---------- */
 .rf #veil{fill:rgba(255,255,255,.66);opacity:0;transition:opacity .3s var(--ease)}
 .rf.spot #veil{opacity:1}
+/* over the whole sheet the veil is lighter (.66 x .6 = .4): the document reads as a document, the error is still found at once */
+.rf.spot.soft #veil{opacity:.6}
 
 /* ---------- the second robot: a client mail on the left, the 1C order on the right ---------- */
 .sheet.mailsheet{width:600px;min-height:0}

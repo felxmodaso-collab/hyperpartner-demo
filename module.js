@@ -612,10 +612,13 @@
   }
   /* ★ the heading line of a clause/box is a full-width block: take its height, not its width, so the close-up stays close */
   function head(n) { var h = box(n.querySelector('b')); return { x: h.x, y: h.y, w: 10, h: h.h }; }
-  function setWhole(whole, instant) {
+  /* close-up of the evidence or the whole sheet; the spotlight stays in both, softer over the whole sheet */
+  function setWhole(whole, instant, slow) {
     st.whole = whole;
     el.whole.textContent = whole ? 'Крупно' : 'Весь документ';
-    el.rf.classList.toggle('spot', !whole);
+    el.rf.classList.add('spot');
+    el.rf.classList.toggle('soft', whole);
+    el.sheet.classList.toggle('slow', !!slow);          /* the automatic pull-back takes 1 s */
     camKey(whole ? 'left' : st.ev, instant);
   }
   /* the verdict panel is built ahead in idle time; the transition only switches classes and moves the camera */
@@ -657,13 +660,24 @@
     var d = D();
     stopAll(); setSteps(2); setSub(el.subT.textContent, 'done', true);
     if (st.pre2 !== st.doc || !$('#big')) panel2(d);
-    if (phone()) measure();
+    if (phone()) {
+      measure();
+      /* ★ phone: from the start of act 2 the camera window is as tall as the whole sheet at full width,
+         so the later pull-back changes no layout (CLS 0) */
+      if (!st.mail && st.SW) { el.cam.style.height = Math.round(st.H * (st.cw - 16) / st.SW + 16) + 'px'; measure(); }
+    }
     if (!st.mail) {
-      /* the verdict is a close-up of the evidence, held by the spotlight, with a clay frame */
+      /* the verdict starts as a close-up of the evidence, held by the spotlight, with a clay frame;
+         ~0.6 s after the third tick the camera pulls back to the whole sheet (the frame stays on the evidence) */
       if (st.evDoc !== st.doc) { st.ev = evidence(d); st.evDoc = st.doc; }
       el.rf.classList.add('clay');
       frameTo(st.ev, anim ? 600 : 0);
-      setWhole(false, !anim);
+      st.userWhole = false;
+      if (!anim || reduce) setWhole(q.get('close') !== '1', true);
+      else {
+        setWhole(false, false);
+        wait(2300, function () { if (!st.userWhole && st.act === 2) setWhole(true, false, true); });
+      }
     }
     /* ★ measured in idle after the frame is drawn: layout is clean, the read costs nothing */
     if (window.requestIdleCallback) requestIdleCallback(fitPanel, { timeout: 400 }); else setTimeout(fitPanel, 100);
@@ -864,7 +878,8 @@
     if (s === 1) openDoc(st.doc, 'play'); else if (s === 2) { if (st.act === 1) skipToVerdict(); else { openDoc(st.doc); play('end'); act2(false); } } else act3();
   });
   el.skip.addEventListener('click', skipToVerdict);
-  el.whole.addEventListener('click', function () { if (st.act === 2 && !st.mail) setWhole(!st.whole); });
+  /* a click before the automatic pull-back cancels it: from then on only the button drives the camera */
+  el.whole.addEventListener('click', function () { if (st.act === 2 && !st.mail) { st.userWhole = true; setWhole(!st.whole); } });
   el.seg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setView(b.dataset.v); });
   el.calcard.addEventListener('input', function (e) { if (e.target.id === 'vol') updCalc(false); });
   document.addEventListener('click', function (e) {
