@@ -1439,5 +1439,7 @@
   }
   if (q.get('view') === 'orig') setView('orig');
   placeThumb();
+  /* the switch appears and changes width after init (hidden until the verdict, the row reflows): keep the thumb in sync */
+  if (window.ResizeObserver) new ResizeObserver(function () { placeThumb(); }).observe(el.seg);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measure(); if (st.act === 1 && typeof st.camKey === 'string') camKey(st.camKey, true); placeThumb(); });
 })();
