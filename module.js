@@ -26,7 +26,9 @@
     rf: $('#rf'), rr: $('#rr'), rg: $('#rg'), rc: $('#rc'), seg: $('#seg'), thumb: $('#thumb'), steps: $('#steps'),
     sub: $('#sub'), subT: $('#subT'), skip: $('#skip'), panel: $('#panel'), calcard: $('#calcard'),
     onec: $('#onec'), flies: $('#flies'), whole: $('#whole'), veil: $('#veil'), cur: $('#cur'), checks: $('#checks'), ckcur: $('#ckcur'), cks: null,
-    tool: $('#tool'), gate: $('#gate'), cur1: $('#cur1'), sw: $('#sw'), box: $('#box')
+    tool: $('#tool'), gate: $('#gate'), cur1: $('#cur1'), sw: $('#sw'), box: $('#box'),
+    plH: $('#plH'), plB: $('#plB'), hN: $('#hN'), hS: $('#hS'), hT: $('#hT'), hB: $('#hB'), bT: $('#bT'), resB: $('#resB'), skip2: $('#skip2'),
+    nar: $('#nar'), rtag: $('#rtag'), ctag: $('#ctag'), shade: $('#shade'), loupe: $('#loupe')
   };
   var st = { doc: 0, act: 1, run: 0, timers: [], view: 'agent', started: false, vol: null, sent: false, sels: [], stage: 1,
     fr: null, raf: 0, cam: null, camKey: 'full', cw: 0, ch: 0, H: 520, played: false };
@@ -57,6 +59,10 @@
 
   /* ---------- helpers ---------- */
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* ★ a number never loses its unit (or a digit group) at a line end: NBSP inside numbers, before ₽ / % / с and before a dash */
+  function nb(s) {
+    return String(s).replace(/(\d) (?=\d)/g, '$1 ').replace(/(\d) (₽|%|с(?=$|[\s.,)]))/g, '$1 $2').replace(/ —/g, ' —');
+  }
   function fmt1(n) { return n.toFixed(1).replace('.', ','); }
   function grp(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function plural(n, a, b, c) { var m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? a : (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? b : c); }
@@ -255,12 +261,14 @@
     if (zone === 'mail') {
       /* the mail sits in the left 54 % at its own size (its text is already large), no zoom */
       var mw = W * 0.54 - 30, sm = Math.min(1, (mw - 20) / SW, (H - 130) / st.H);
-      return { s: sm, x: 20 + (mw - SW * sm) / 2, y: 4 };
+      return { s: sm, x: 20 + (mw - SW * sm) / 2, y: 8 };
     }
     if (zone === 'docs') {
       /* v9: the whole sheet stands still in the left zone for the whole check; it ends 12 px above the subtitle */
-      var dw = W * 0.56 - 30, ds = Math.min((H - 16 - 22 - st.subH - 12) / st.H, (dw - 32) / SW);
-      return { s: ds, x: 20 + (dw - SW * ds) / 2, y: 16 };
+      /* v10: no subtitle; under the sheet — the narrator line and, on the verdict, the view switch (reserved, no movement) */
+      /* v10-polish: under the sheet only the narrator (gap 20, line 40, margin 12); the sheet is 640 wide on 1440 when the height allows */
+      var dw = W * 0.56 - 30, ds = Math.min((H - 8 - 72) / st.H, (dw - 46) / SW);
+      return { s: ds, x: 20 + (dw - SW * ds) / 2, y: 8 };              /* the same top line as the robot's panel */
     }
     if (zone === 'left') {
       var zw = W * 0.56 - 30, s1 = Math.min((H - 40) / st.H, (zw - 32) / SW);
@@ -306,6 +314,16 @@
   function rectAttrs(r, b, g, gy) { r.setAttribute('x', b.x - g); r.setAttribute('y', b.y - gy); r.setAttribute('width', Math.max(0, b.w + g * 2)); r.setAttribute('height', Math.max(0, b.h + gy * 2)); }
   function drawFrame(b) {
     rectAttrs(el.rr, b, 0, 0); rectAttrs(el.rg, b, 4, 1);
+    /* v10: the "Робот" tag rides on the frame's top-left corner, outside, at its own screen size (counter-scaled) */
+    /* v10-polish: in the right third of the sheet the tag goes outside the sheet on the right, at the frame's level (no digits covered) */
+    /* v10-polish 2: the side of the tag is set per zone (data `tag`): r — outside the sheet on the right at the frame's level (documents),
+       rr — right of the frame, t — above, b — below; never over the source text */
+    var ks = (1 / ((st.cam && st.cam.s) || 1)).toFixed(4), SWf = st.SW || 720, sd = st.tagSide || 'r', tf;
+    if (sd === 'rr') tf = 'translate(' + (b.x + b.w + 8).toFixed(1) + 'px,' + b.y.toFixed(1) + 'px) scale(' + ks + ')';
+    else if (sd === 't') tf = 'translate(' + (b.x - 2).toFixed(1) + 'px,' + (b.y - 4).toFixed(1) + 'px) scale(' + ks + ') translateY(-100%)';
+    else if (sd === 'b') tf = 'translate(' + (b.x - 2).toFixed(1) + 'px,' + (b.y + b.h + 4).toFixed(1) + 'px) scale(' + ks + ')';
+    else tf = 'translate(' + (SWf + 8) + 'px,' + b.y.toFixed(1) + 'px) scale(' + ks + ')';
+    el.rtag.style.transform = tf;
     var c = Math.min(10, b.w / 4, b.h / 2), x2 = b.x + b.w, y2 = b.y + b.h, o = 2;
     el.rc.setAttribute('d',
       'M' + (b.x - o) + ' ' + (b.y - o + c) + 'V' + (b.y - o) + 'H' + (b.x - o + c) +
@@ -439,6 +457,7 @@
       var frs = p.k.map(function (k) { return el.doc.querySelector('[data-k="' + k + '"]'); });
       /* frame 0.4 s -> hold 0.2 s -> the copy flies 0.55 s and lands before the next subtitle */
       sc.push({ tag: 'parse', dur: p.k.length > 1 ? 1650 : 1100, fn: function (fast) {
+        st.tagSide = p.tag || 't';
         setSub(p.say, 'live', fast);
         frs.forEach(function (fr, j) {
           var key = p.k[j], val = p.v[j];
@@ -470,6 +489,7 @@
       $$('tr.new', el.onec).forEach(function (r) { r.classList.remove('new'); });
       $('#onecNtf').classList.add('on');
       fitOnecTitle();
+      narrate(d.story[5], fast);                         /* v10: a calm end — the 1C notification and the narrator line */
       setSub('Заказ заведён в 1С', 'done', fast);
     } });
     sc.push({ tag: 'end', dur: 0, fn: function (fast) { act2(!fast); } });
@@ -478,7 +498,7 @@
   function buildScript(d) {
     /* v9-add: three stages — the employee by hand, data protection, the robot */
     var robot = d.kind === 'mail' ? buildMail(d).filter(function (s) { return s.tag !== 'open' && s.tag !== 'pii'; }) : buildChecks(d);
-    return buildManual(d).concat(buildProtect(d), robot);
+    return buildArrive(d).concat(buildManual(d), buildHand(d), buildProtect(d), robot);
   }
   /* ---------- v9: the check of a document, two zones like the mail -> 1C run ----------
      desktop: the whole sheet stands still on the left, the frame works on it, each found value flies into the forest panel
@@ -489,7 +509,7 @@
     lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
   };
   function ckHTML(kind, v, s) {
-    return '<span class="ci">' + CK[kind] + '</span><b class="cv">' + esc(v) + '</b><span class="cs">' + esc(s) + '</span>';
+    return '<span class="ci">' + CK[kind] + '</span><b class="cv">' + esc(nb(v)) + '</b><span class="cs">' + esc(nb(s)) + '</span>';
   }
   /* a record in the panel: created invisible (the flying copy needs its place), then 'in' (value) and 'ok' (check line + mark) */
   function addCk(kind, v, s) {
@@ -509,6 +529,80 @@
     el.cks = $('.cks', el.checks);
     el.ckcur.className = 'ckcur';
     el.ckcur.innerHTML = '<span class="ci"></span><b class="cv">Проверяю ' + esc(d.short || d.acc) + '</b><span class="cs"></span>';
+  }
+  /* ---------- v10: the narrator, the board of the two actors, the two worlds ---------- */
+  var EASE = 'cubic-bezier(0.16,1,0.3,1)';
+  /* one large line under the source; the old line leaves up 8 px (0.2 s), the new one comes from below (0.3 s); *x* is the stake (700, clay-deep) */
+  function narrate(s, instant) {
+    if (el.nar.dataset.s === s) return;
+    el.nar.dataset.s = s;
+    var n = document.createElement('span'), old = el.nar.lastElementChild;
+    n.className = 'nl'; n.innerHTML = esc(nb(s)).replace(/\*([^*]+)\*/g, '<b>$1</b>');
+    if (instant || reduce || !old) { el.nar.innerHTML = ''; el.nar.appendChild(n); return; }
+    $$('.nl.out', el.nar).forEach(function (x) { x.remove(); });
+    old.classList.add('out'); el.nar.appendChild(n);
+    var a = old.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 200, fill: 'forwards' });
+    a.onfinish = function () { old.remove(); };
+    n.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE });
+  }
+  /* whose turn: the filled place on the board and the world of the stage (warm for the person, cool for the robot) */
+  function setTurn(who) {
+    st.turn = who;
+    el.plH.classList.toggle('on', who === 'hum');
+    el.plB.classList.toggle('on', who === 'bot');
+    /* ★ v10-polish: the robot's world comes as a shutter (one layer, transform only), not by repainting the stage;
+       only the shutter and the folder row get a class, so the style recalc stays small */
+    el.shade.classList.toggle('in', who === 'bot');
+    el.folders.classList.toggle('w-bot', who === 'bot');
+  }
+  /* the person's clock: real time while he works, then fast in the background (~20 s to the full time); a timer every 250 ms, not every frame */
+  function humTick() {
+    var d = D(), h = st.h; if (!h) return;
+    var now = performance.now(), p = 0, sec;
+    if (h.mode === 'real') sec = (now - h.a0) / 1000;
+    else { p = Math.min(1, (now - h.f0) / 20000); sec = h.from + (d.calc.min * 60 - h.from) * p; }
+    el.hT.textContent = fmtMS(sec);
+    if (h.mode === 'fast') {
+      el.hB.style.transform = 'scaleX(' + p.toFixed(3) + ')';
+      el.hS.textContent = d.hum[Math.min(d.hum.length - 1, Math.floor(p * d.hum.length))];
+      if (p >= 1) humDone(false);
+    }
+  }
+  function humStop() { clearInterval(st.hTimer); st.hTimer = 0; }
+  function humStart() { humStop(); st.h = { mode: 'real', a0: performance.now() }; el.hT.textContent = '0:00'; st.hTimer = setInterval(humTick, 250); }
+  function humFast(fast) {
+    var now = performance.now();
+    if (!st.h) st.h = { mode: 'real', a0: now - 4000 };
+    st.h.from = st.h.mode === 'real' ? (now - st.h.a0) / 1000 : st.h.from;
+    st.h.mode = 'fast'; st.h.f0 = now;
+    el.plH.classList.add('bg');
+    if (!st.hTimer) st.hTimer = setInterval(humTick, 250);
+    humTick();
+  }
+  /* the person is done: full time, "Готово", the result between the two places, the last narrator line, one soft glow on the button */
+  function humDone(instant) {
+    var d = D();
+    humStop(); st.ended = true;
+    el.plH.classList.add('bg', 'done');
+    el.hT.textContent = fmtMS(d.calc.min * 60); el.hS.textContent = 'Готово'; el.hB.style.transform = 'scaleX(1)';
+    /* v10-polish: the result is the second line of the verdict, not a plate on the board */
+    var v2 = $('#v2'); if (v2) {
+      v2.innerHTML = v2HTML(d, true);
+      if (!instant && !reduce) v2.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 400, easing: EASE });
+    }
+    narrate(d.story[7], instant);
+    el.skip2.textContent = 'Повторить';
+    var c = $('#cta'); if (c && !instant && !reduce) c.classList.add('glow');
+  }
+  function resetBoard(d) {
+    humStop(); st.h = null; st.ended = false;
+    el.plH.classList.remove('on', 'bg', 'done'); el.plB.classList.remove('on', 'done');
+    el.hN.textContent = d.role; el.ctag.textContent = d.role;
+    el.hT.textContent = '0:00'; el.hS.textContent = ''; el.hB.style.transform = 'scaleX(0)'; el.bT.innerHTML = '';
+    el.resB.classList.remove('on'); el.resB.innerHTML = '';
+    el.skip2.textContent = 'Пропустить';
+    el.nar.dataset.s = ''; el.nar.innerHTML = '';
+    setTurn('none');
   }
   /* ---------- v9-add, stage 1 "Вручную": how an employee does it — a pointer that moves like a hand, typing with a typo ---------- */
   function rng(seed) {
@@ -530,19 +624,111 @@
     var KEYS = ['C', '←', '%', '±', '7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '0', ',', '=', '+'];
     var body = m.tool === 'calc' ? '<div class="tape"></div><div class="tl in1">' + CARET + '</div><div class="keys">' +
         KEYS.map(function (k) { return '<b data-key="' + k + '"' + (/\d|,/.test(k) ? '' : ' class="op"') + '>' + k + '<i class="fl"></i></b>'; }).join('') + '</div>'
-      : m.tool === 'notes' ? '<div class="menu"><span>Файл</span><span>Правка</span><span>Формат</span><span>Вид</span></div><div class="area in1">' + CARET + '</div>'
-      : '<div class="srch in1"><i class="mg">' + I1C.find + '</i>' + CARET + '</div><ul class="res">' + (m.res || []).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+      : m.tool === 'notes' ? '<div class="tabs1"><span class="tab">Замечания.txt</span></div><div class="menu"><span>Файл</span><span>Изменить</span><span>Просмотр</span></div><div class="area in1">' + CARET + '</div>'
+      : '<div class="tabs1"><span class="tab">Справочник ТН ВЭД</span></div><div class="addr"><span>Справочник ТН ВЭД</span></div>' +
+        '<div class="srch in1"><i class="mg">' + I1C.find + '</i>' + CARET + '</div><ul class="res">' + (m.res || []).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
     el.tool.className = 'tool ' + m.tool;
-    el.tool.innerHTML = '<div class="wt"><span>' + esc(m.title) + '</span><i class="x">' + I1C.close + '</i></div><div class="wb">' + body + '</div>';
+    /* v10: Windows 11 chrome — app icon, title 14, the three caption buttons */
+    var TT = { calc: 'Калькулятор', notes: 'Блокнот', tnved: 'Браузер' }, ICO = { calc: '#0067C0', notes: '#4A8CD8', tnved: '#2B7A5B' };
+    el.tool.innerHTML = '<div class="wt"><i class="ai" style="background:' + ICO[m.tool] + '"></i><span>' + TT[m.tool] + '</span>' +
+      '<i class="wc">&#x2500;</i><i class="wc">&#x2610;</i><i class="wc">&#x2715;</i></div><div class="wb">' + body + '</div>';
   }
   /* desktop: the tool window is exactly as tall as the sheet and starts at its top (from the cached camera, no layout read) */
+  /* v10-polish: a compact window that overlaps the right edge of the sheet by 24 px, centred on the sheet (offsets, read in openDoc) */
   function sizeTool() {
     var on = !phone() && !st.mail && st.cam;
-    el.tool.style.top = on ? Math.round(st.cam.y) + 'px' : '';
-    el.tool.style.height = on ? Math.round(st.H * st.cam.s) + 'px' : '';
+    el.tool.style.height = '';
+    if (!on) { el.tool.style.left = el.tool.style.top = ''; return; }
+    var h = el.tool.offsetHeight, sh = st.H * st.cam.s;
+    el.tool.style.left = Math.round(st.cam.x + st.SW * st.cam.s - 24) + 'px';
+    el.tool.style.top = Math.round(st.cam.y + Math.max(0, (sh - h) / 2)) + 'px';
+  }
+  /* ---------- v10-polish: the magnifier on the finding — a white card on the sheet next to the frame, a 2x copy of the error place ---------- */
+  function buildLoupe(d) {
+    if (st.mail || st.loupeDoc === st.doc || !d.checks) return;
+    var err = d.checks.filter(function (c) { return c.err; })[0]; if (!err) return;
+    var fz = union(err.k.map(function (k) { return box(fieldEl(k)); })), ph = phone(), SW = st.SW || 720, SH = st.H;
+    var src, sc = 1.6, w0;
+    if (d.kind === 'table') { src = [$('.tots', el.doc)]; sc = 2; w0 = union($$('.tots span', el.doc).map(box)).w + 8; }
+    else if (d.kind === 'contract') { src = [fieldEl('c2')]; w0 = 250; }
+    else { src = [fieldEl('b31'), fieldEl('b33')]; w0 = 260; }
+    if (ph) sc = Math.min(2.4, (SW - 56) / w0);
+    var wrap = document.createElement('div');
+    wrap.className = 'doc lin'; wrap.style.width = w0 + 'px'; wrap.style.transform = 'scale(' + sc + ')';   /* `doc` keeps the sheet styles */
+    src.forEach(function (n) {
+      var c = n.cloneNode(true); c.removeAttribute('data-k');
+      $$('[data-k]', c).forEach(function (x) { x.removeAttribute('data-k'); });
+      wrap.appendChild(c);
+    });
+    if (d.kind === 'table') { var fs = $$('.f', wrap); if (fs.length) fs[fs.length - 1].classList.add('hit', 'on'); }
+    el.loupe.innerHTML = ''; el.loupe.className = 'loupe on ' + d.kind; el.loupe.appendChild(wrap);
+    el.loupe.style.visibility = 'hidden';               /* measured while laid out but invisible (idle time) */
+    var h = wrap.offsetHeight;
+    el.loupe.style.visibility = ''; el.loupe.classList.remove('on');
+    var W = Math.round(w0 * sc + 28), H = Math.round(h * sc + 24), x, y, side;
+    if (d.kind === 'table' && !ph) { x = fz.x - 26 - W; y = Math.max(8, Math.min(SH - H - 8, fz.y + fz.h / 2 - H / 2)); side = 'r'; }
+    else {
+      x = ph ? 16 : Math.max(8, Math.min(SW - W - 8, fz.x + fz.w / 2 - W / 2));
+      y = fz.y + fz.h + 18; side = 't';
+      if (y + H > SH - 8) { y = fz.y - 18 - H; side = 'b'; }
+    }
+    el.loupe.style.cssText = 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;width:' + W + 'px;height:' + H + 'px';
+    el.loupe.classList.add('t-' + side);
+    st.loupeSide = side; st.loupeDoc = st.doc;
+  }
+  /* the reading magnifier: what the frame took, large (label normal, value 600, 20 px; the sum column — three numbers, a rule, the sum);
+     born next to the frame with a tail to it, holds 0.35 s, then flies into the panel shrinking to the record */
+  function lensLabel(key) {
+    var n = fieldEl(key); if (!n) return '';
+    if (/^p\d/.test(key)) return 'Стороны';
+    if (key === 'basis') return 'Основание';
+    if (n.matches('.f') && n.previousElementSibling) return n.previousElementSibling.textContent;
+    var b = n.querySelector('b, span'); if (!b) return '';
+    var i = b.querySelector('i'); return i ? b.textContent.replace(i.textContent, '').trim() : b.textContent;
+  }
+  function lens(src, to, c, col, done) {
+    if (!src || !to || reduce || phone()) { done(); return; }
+    var a = src.getBoundingClientRect(), sr = el.scene.getBoundingClientRect(), b = to.getBoundingClientRect();
+    var html, w, h, val = c.f || c.v;
+    if (col) {
+      var nums = $$('td.sum', el.doc).map(function (td) { return td.textContent; });
+      html = nums.map(function (s) { return '<span class="ln">' + esc(s) + '</span>'; }).join('') + '<b class="sum">' + esc(val) + '</b>';
+      w = 190; h = nums.length * 28 + 44;
+      a = { left: a.left, right: a.right, top: a.top - 60, height: 80, width: a.width };   /* centre on the column */
+    } else {
+      var lab = lensLabel(c.k[0]);
+      html = (lab ? '<span class="lb">' + esc(lab) + '</span>' : '') + '<b>' + esc(val) + '</b>';
+      w = Math.min(380, Math.max(lab.length * 9.5, val.length * 12) + 36); h = lab ? 70 : 46;
+    }
+    var n = document.createElement('div');
+    var x = a.right + 16, side = 'l';
+    if (x + w > sr.right - 8) { x = a.left - 16 - w; side = 'r'; }
+    var y = Math.max(sr.top + 8, Math.min(sr.bottom - h - 8, a.top + a.height / 2 - h / 2));
+    n.className = 'lens t-' + side; n.innerHTML = html;
+    n.style.cssText = 'left:0;top:0;width:' + Math.round(w) + 'px;transform:translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+    el.flies.appendChild(n);
+    var o = side === 'l' ? '0 50%' : '100% 50%', tx = b.left - 12, ty = b.top + b.height / 2 - h * 0.3;
+    var t0 = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+    var an = n.animate([
+      { transform: t0 + ' scale(.6)', opacity: 0, transformOrigin: o, offset: 0 },
+      { transform: t0 + ' scale(1)', opacity: 1, transformOrigin: o, offset: 0.2 },
+      { transform: t0 + ' scale(1)', opacity: 1, transformOrigin: o, offset: 0.55 },        /* holds 0.35 s */
+      { transform: 'translate(' + Math.round(tx) + 'px,' + Math.round(ty) + 'px) scale(.6)', opacity: 0.2, transformOrigin: '0 0', offset: 1 }
+    ], { duration: 1000, easing: 'cubic-bezier(0.65,0,0.35,1)', fill: 'forwards' });
+    var run = st.run;
+    an.onfinish = function () { n.remove(); if (run === st.run) done(); };
+  }
+  function showLoupe(fast) {
+    if (st.loupeDoc !== st.doc) buildLoupe(D());
+    if (st.loupeDoc !== st.doc) return;
+    el.loupe.classList.add('on');
+    var o = st.loupeSide === 'r' ? '100% 50%' : st.loupeSide === 'b' ? '50% 100%' : '50% 0';
+    if (!fast && !reduce) el.loupe.animate([{ transform: 'scale(.6)', opacity: 0, transformOrigin: o }, { transform: 'none', opacity: 1, transformOrigin: o }], { duration: 350, easing: EASE });
   }
   function renderGate(n) {
-    el.gate.innerHTML = '<span class="gl">' + CK.lock + '</span><b>Робот ещё не видит документ</b><span class="gc">Скрыто 0 из ' + n + '</span>';
+    var open = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 6.6-1.6" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+    el.gate.className = 'gate';
+    el.gate.innerHTML = '<span class="gl"><i class="c">' + CK.lock + '</i><i class="o">' + open + '</i></span><b>Робот ещё не видит документ</b><span class="gc">Скрыто 0 из ' + n + '</span>';
   }
   /* typing: uneven 60-160 ms per key, one typo noticed and erased with Backspace */
   function typePlan(text, r, withTypo) {
@@ -564,6 +750,7 @@
   function curMove(a, b, ms, k, ib, fast, lin) {
     var c = el.cur1;
     c.classList.add('on');
+    c.classList.toggle('flip', b.x > (st.cw || 9999) - 120);   /* near the right edge the role tag turns to the left */
     if (fast || reduce || !a || !ms) { c.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px)'; c.classList.toggle('ib', !!ib); return; }
     var dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || 1;
     var cx = (a.x + b.x) / 2 - dy * k, cy = (a.y + b.y) / 2 + dx * k;
@@ -633,21 +820,20 @@
       all = cells;
       cam = ph ? camFocus(union(cells)) : cam;
       place(sp(cells[0], -2.2, 2.4), false);
-      m.type.forEach(function (s, i) {
+      m.type.slice(0, 1).forEach(function (s, i) {          /* v10: one value typed, then the start of the second */
         mv(sp(cells[i], 0.74, 0.55), false, 170 + Math.round(r() * 90));
         if (!ph) { mv(tp(inp, 0.55, 0.5), true, 80); click(); }
         type(tx, s, function () { var tp0 = $('.tape', el.tool); tp0.insertAdjacentHTML('beforeend', '<div>' + esc(s) + '</div>'); tx().textContent = ''; });
       });
       act(function (fast) { setSub(m.more, '', fast); });
       /* ★ the last move (towards the third row) runs while the stopwatch already spins: the stage ends on the move */
-      var t9 = t; mv(sp(cells[2], 0.7, 0.55), false, 0); t = t9 + 120;
+      var t9 = t; mv(sp(cells[1], 0.74, 0.55), false, 0); t = t9 + 450;
     } else if (m.tool === 'notes') {
       var c0 = box(fieldEl('c0').querySelector('.f')), c1 = box(fieldEl('c1').querySelector('.f'));
       all = [c0, c1]; cam = ph ? camFocus(union(all)) : cam;
       place(sp(c0, 0.1, -1.5), true);
-      /* reading line by line: the first line of п. 1 and of п. 2 */
-      sweep(c0, 0.02, 0.97, 0.5 / Math.max(1, Math.round(c0.h / 19)));
-      sweep(c1, 0.02, 0.9, 0.5 / Math.max(1, Math.round(c1.h / 19)));
+      /* v10: one selection — the line of п. 2 */
+      sweep(c1, 0.02, 0.9, 0.5 / Math.max(1, Math.round(c1.h / 19)), true);
       if (!ph) { mv(tp(inp, 0.3, 0.3), true, 70); click(); }
       type(tx, m.type[0]);
       act(function (fast) { setSub(m.more, '', fast); });
@@ -683,43 +869,72 @@
         type(function () { return $('.tx', vc); }, m.type[0], function () { dd.classList.add('on'); });
         mv(tp(dd, 0.35, 0.5), false, 80); click();
         act(function () { fc.classList.remove('tcur'); dd.classList.remove('on'); vc.textContent = m.pick; fc.closest('.fr').classList.add('got'); }, 120);
-        mv(sp(bk, 0.5, 0.6), true, 180);
-        mv(tp(fk, 0.3, 0.55), true, 70); click(); act(on(fk, true));
-        type(function () { return $('.tx', vk); }, m.type[1]);
+        var t8 = t; mv(sp(bk, 0.5, 0.6), true, 0); t = t8 + 450;   /* v10: the start of the second action — back to the contract number */
       }
       act(function (fast) { setSub(m.more, '', fast); });
       t += 200;
     }
     var dur = t, zU = all.length ? union(all) : null;
+    /* v10, beat A: the person in full size; his place on the board is filled, his clock runs in real time */
     var sc = [{ tag: 'man', dur: dur, fn: function (fast) {
-      markStage(1);
+      markStage(1); setTurn('hum');
       if (ph && zU) camKey(zU, true);
-      setSub('Работает человек', '', fast);
-      /* the stopwatch runs fast: ~1:30 for the 5 s of the stage */
-      for (var i = 0; i <= dur; i += 100) (function (ms) { wait(ms, function () { el.sw.textContent = 'Сотрудник · ' + fmtMS(ms / 1000 * 18); }, fast); })(i);
+      narrate(d.story[1], fast);
+      humStart();
       acts.forEach(function (a) { wait(a.at, function () { a.fn(fast); }, fast); });
     } }];
-    var full = d.calc.min * 60, from = dur / 1000 * 18;
-    sc.push({ tag: 'mend', dur: 1300, fn: function (fast) {
-      for (var i = 1; i <= 6; i++) (function (j) { wait(j * 100, function () { el.sw.textContent = 'Сотрудник · ' + fmtMS(from + (full - from) * j / 6); }, fast); })(i);
-      wait(600, function () { setSub('Вручную: около ' + d.calc.min + ' ' + plural(d.calc.min, 'минуты', 'минут', 'минут') + ' ' + m.per, 'done', fast); }, fast);
-    } });
     return sc;
+  }
+  /* v10, the setup: the source arrives from above and the narrator states the stake */
+  function buildArrive(d) {
+    return [{ tag: 'arrive', dur: 1200, fn: function (fast) {
+      setTurn('none');
+      narrate(d.story[0], fast);
+      if (!fast && !reduce) el.cam.animate([{ opacity: 0, transform: 'translateY(-24px)' }, { opacity: 1, transform: 'none' }], { duration: 500, easing: EASE });
+    } }];
+  }
+  /* v10, the hand-off (0.7 s): the person's window folds into his place on the board, the robot's place fills, the world turns cool;
+     the person keeps working in the background (fast clock) */
+  function buildHand(d) {
+    var win = d.kind === 'mail' ? el.onec : el.tool, dx = 0, dy = 0;
+    if (!phone()) {
+      var a = win.getBoundingClientRect(), b = el.plH.getBoundingClientRect();   /* read when the script is built, never in rAF */
+      dx = b.left + b.width * 0.12 - (a.left + a.width / 2); dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    }
+    return [{ tag: 'hand', dur: 700, fn: function (fast) {
+      narrate(d.story[2], fast);
+      el.cur1.classList.remove('on');
+      if (!fast && !reduce && !phone()) {
+        var an = win.animate([{ transform: 'none', opacity: 1 }, { transform: 'translate(' + dx.toFixed(0) + 'px,' + dy.toFixed(0) + 'px) scale(.1)', opacity: 0 }],
+          { duration: 600, easing: EASE, fill: 'forwards' });
+        wait(650, function () { an.cancel(); });
+      }
+      setTurn('bot'); humFast(fast);
+      if (d.kind !== 'mail') markStage(2);              /* the robot's panel slides in from behind the edge, already locked */
+    } }];
   }
   /* ---------- v9-add, stage 2 "Защита данных": personal data are closed before the robot gets the document ---------- */
   function buildProtect(d) {
     var sc = [], ph = phone();
     var list = $$('.pii', el.doc).map(function (n) { return { n: n, b: box(n) }; }).sort(function (a, b) { return a.b.y - b.b.y || a.b.x - b.b.x; });
-    var N = list.length, step = Math.round(Math.min(350, 1900 / Math.max(1, N)));
-    var gc = function (k) { var g = $('.gc', el.gate); if (g) g.textContent = 'Скрыто ' + k + ' из ' + N; };
-    sc.push({ tag: 'prot', dur: 350, fn: function (fast) {
+    var N = list.length, step = Math.round(Math.min(300, 1500 / Math.max(1, N)));
+    /* v10: the robot's receiver is already there but locked (forest veil, a large lock, the counter); phone — the lock strip under the source */
+    var gc = function (k) {
+      var g = $('.gc', el.gate); if (g) g.textContent = 'Скрыто ' + k + ' из ' + N;
+      if (ph) setCkCur('lock', 'Робот ещё не видит документ', 'Скрыто ' + k + ' из ' + N);
+    };
+    sc.push({ tag: 'prot', dur: 250, fn: function (fast) {
       markStage(2); frameOff();
-      el.cur1.classList.remove('on');
+      el.gate.classList.remove('open');
       st.sels.forEach(function (n) { n.remove(); }); st.sels = [];
-      if (d.kind === 'mail') { renderOnec(d); if (ph) setCur(d.onec.top[0][0], '', false); }   /* the robot gets an empty order */
-      if (ph) camKey('full', true);
+      if (d.kind === 'mail') {
+        renderOnec(d); if (ph) setCur(d.onec.top[0][0], '', false);                  /* the robot gets an empty order */
+        /* v10-polish: the robot's locked 1C window comes in from the right after the person's window has folded */
+        if (!fast && !reduce && !ph) el.onec.animate([{ transform: 'translateX(64px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 450, easing: EASE });
+      }
+      if (ph) { camKey('full', true); if (st.phCamH && d.kind !== 'mail') { el.cam.style.height = st.phCamH + 'px'; st.ch = st.phCamH; } }
       gc(0);
-      setSub('Скрываю данные человека', 'live', fast);
+      narrate(d.story[3], fast);
     } });
     list.forEach(function (p, i) {
       sc.push({ tag: 'pii', dur: step, fn: function (fast) {
@@ -727,14 +942,15 @@
         wait(200, function () { p.n.classList.remove('pre'); p.n.classList.add('masked'); gc(i + 1); }, fast);
       } });
     });
-    sc.push({ tag: 'pdone', dur: 800, fn: function (fast) { setSub('Данные скрыты. Робот их не получит', 'done', fast); } });
-    sc.push({ tag: 'pgo', dur: 600, fn: function (fast) {
+    /* the counter is full: the lock opens, the veil leaves, the robot starts */
+    sc.push({ tag: 'pdone', dur: 450, fn: function (fast) { el.gate.classList.add('open'); } });
+    sc.push({ tag: 'pgo', dur: 300, fn: function (fast) {
       if (d.kind !== 'mail') {
         var s = 'Скрыты до чтения: ' + N;
         if (ph) setCkCur('lock', 'Персональные данные', s); else addCk('lock', 'Персональные данные', s).classList.add('in', 'ok');
       }
-      markStage(3);                                     /* the gate opens: the dashed outline becomes the robot's zone */
-      setSub('Документ передан роботу', 'live', fast);
+      markStage(3);
+      narrate(d.story[4], fast);
     } });
     return sc;
   }
@@ -750,8 +966,11 @@
       var z = union((col ? cells : []).concat(parts));
       var src = fieldEl(c.k[c.k.length - 1] === '@sum' ? null : c.k[c.k.length - 1]) || $$('td.sum', el.doc).pop();
       var err = !!c.err, kind = err ? 'err' : 'tick', fly0 = c.f || c.v;
-      var reach = col ? 1100 : 650;                    /* frame arrives (and, for a column, stretches), then holds */
-      sc.push({ tag: err ? 'err' : col ? 'col' : 'rec', dur: err ? 2700 : col ? 1900 : 1400, fn: function (fast) {
+      /* frame arrives (and, for a column, stretches), then holds; ★ the finding freezes everything for 0.3 s before the copy flies */
+      /* v10-polish: the frame takes the place, a magnifier card is born next to it, holds 0.35 s and itself flies into the panel */
+      var reach = col ? 1050 : err ? 950 : 420;
+      sc.push({ tag: err ? 'err' : col ? 'col' : 'rec', dur: err ? 2300 : col ? 2100 : 1600, fn: function (fast) {
+        st.tagSide = c.tag || 'r';
         setSub(col ? c.say.replace('{n}', grp(digits(cells.length ? $$('td.sum', el.doc)[0].textContent : 0))) : c.say, 'live', fast);
         if (ph) camKey(z, fast);
         if (col) {
@@ -765,7 +984,10 @@
         if (err) wait(400, function () {
           el.rf.classList.add('clay');
           var et = markTarget(c.k[0]); if (et) et.classList.add('hit', 'on');
-          if (!fast) { el.rf.classList.remove('pulse'); requestAnimationFrame(function () { el.rf.classList.add('pulse'); }); }
+          /* v10, the blow: the clay frame "grabs" once (1 → 1.06 → 1, 0.35 s) and the narrator says "Стоп" with the sum in bold clay */
+          if (!fast) { el.rf.classList.remove('grab'); requestAnimationFrame(function () { el.rf.classList.add('grab'); }); }
+          narrate(d.story[5], fast);
+          wait(350, function () { showLoupe(fast); }, fast);   /* right after the grab, the magnifier grows out of the frame */
         }, fast);
         wait(reach, function () {
           var land = function () {
@@ -776,7 +998,8 @@
           };
           if (ph) { land(); return; }
           var n = addCk(kind, c.v, c.s);
-          if (fast) land(); else fly(src, $('.cv', n), fly0, land, true);
+          /* the finding does not fly: its magnifier stays on the sheet (P2); the record appears in place */
+          if (fast || err) land(); else lens(src, $('.cv', n), c, col, land);
         }, fast);
       } });
     });
@@ -823,17 +1046,22 @@
     el.scene.classList.toggle('act2', n === 2);
     el.scene.classList.toggle('act3', n === 3);
   }
-  /* verdict panel: title -> number -> why -> "further without a person" + three lines (+ the notification for the mail) -> button */
+  var ROLE_G = { 'Бухгалтер': 'бухгалтера', 'Менеджер': 'менеджера', 'Кладовщик': 'кладовщика', 'Юрист': 'юриста', 'Специалист': 'специалиста' };
+  function v2HTML(d, done) {
+    if (done) return 'в <b>' + Math.round(d.calc.min * 60 / d.time) + '</b> раз быстрее ' + esc(ROLE_G[d.role] || '');
+    return typeof d.found2 === 'string' ? esc(d.found2) : 'найдено за <b>' + fmt1(d.time) + ' с</b>';
+  }
+  /* verdict panel: title -> number -> second line -> "further without a person" + three lines (+ the notification for the mail) -> button */
   function panel2(d) {
     el.panel.classList.remove('compact', 'tight');
     el.panel.innerHTML = '<div class="pin" style="display:contents">' +
       '<h2>' + esc(d.verdict.title) + '</h2><p class="big' + (d.kind === 'mail' ? ' ok' : '') + '" id="big">' + esc(d.big) + '</p>' +
-      '<p class="why">' + esc(d.why) + '</p>' +
-      /* v9-add: by hand vs the robot (calc.min and time) */
-      '<div class="vs"><div><span>Вручную</span><b>' + d.calc.min + ' мин</b></div><div class="rb"><span>Робот</span><b>' + fmt1(d.time) + ' с</b></div></div>' +
+      /* v10-polish: the second line — "found in 3.3 s", then "N times faster than the accountant" (the "why" line is gone: the magnifier shows it) */
+      '<p class="v2" id="v2">' + v2HTML(d, !!st.ended) + '</p>' +
       '<p class="cap">Дальше без человека</p>' +
       '<ul class="acts">' + d.acts.map(function (a) { return '<li>' + ICON.check + '<span>' + esc(a) + '</span></li>'; }).join('') + '</ul>' +
-      (typeof d.note === 'string' ? '<p class="note">' + esc(d.note) + '</p>' : '') +
+      /* ★ only a string is ever printed: an array or an object (sheet data, personal data) never becomes text */
+      (typeof d.notify === 'string' ? '<p class="note">' + esc(d.notify) + '</p>' : '') +
       '<button class="cta" id="cta" type="button" data-go="3"><span>Посчитать для моего потока</span> <span class="arr" aria-hidden="true">→</span></button></div>';
     st.pre2 = st.doc;
   }
@@ -862,7 +1090,7 @@
     el.rf.classList.toggle('soft', whole);
     el.sheet.classList.toggle('slow', !!slow);          /* the automatic pull-back takes 1 s */
     var dk = !phone() && !st.mail;                        /* v9 desktop documents: the whole sheet is the check position */
-    if (dk && !whole) frameTo(st.ev, instant ? 0 : 400);  /* the close-up takes the whole evidence into the frame */
+    if (dk && !whole && st.ev) frameTo(st.ev, instant ? 0 : 400);  /* the close-up takes the whole evidence into the frame */
     camKey(whole ? (dk ? 'docs' : 'left') : st.ev, instant);
   }
   /* the verdict panel is built ahead in idle time; the transition only switches classes and moves the camera */
@@ -872,6 +1100,7 @@
       if (st.doc !== doc || st.act !== 1) return;
       if (st.pre2 !== doc) panel2(D());
       if (!st.mail && st.evDoc !== doc) { st.ev = evidence(D()); st.evDoc = doc; }
+      buildLoupe(D());                                  /* the magnifier is prepared in idle time too */
     };
     if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 400);
   }
@@ -909,39 +1138,29 @@
     var d = D();
     stopAll(); setSteps(2); setSub(el.subT.textContent, 'done', true);
     if (st.pre2 !== st.doc || !$('#big')) panel2(d);
-    if (phone()) {
-      measure();
-      /* ★ phone: from the start of act 2 the camera window is as tall as the whole sheet at full width,
-         so the later pull-back changes no layout (CLS 0) */
-      if (!st.mail && st.SW) { el.cam.style.height = Math.round(st.H * (st.cw - 16) / st.SW + 16) + 'px'; measure(); }
-    }
-    if (!st.mail && !phone()) {
-      /* v9 desktop: the sheet stays whole where it stood, the clay frame stays on the error, the veil softens to .4;
-         the records leave the panel and the verdict appears in their place (CSS); "Крупно" zooms on the evidence */
-      if (st.evDoc !== st.doc) { st.ev = evidence(d); st.evDoc = st.doc; }
+    /* ★ phone: the camera window is as tall as the whole sheet (height computed in openDoc: no layout read here) */
+    if (phone() && !st.mail && st.phCamH) { el.cam.style.height = st.phCamH + 'px'; st.ch = st.phCamH; }
+    if (!st.mail) {
+      /* v10-polish: no close-up mode — the whole sheet stays, the clay frame on the error and the magnifier next to it */
       el.rf.classList.add('clay', 'on');
       st.userWhole = true;
-      if (q.get('close') === '1') setWhole(false, true); else setWhole(true, true, false, true);
-    } else if (!st.mail) {
-      /* phone (as v8): a close-up of the evidence, ~0.6 s after the third tick the camera pulls back to the whole sheet */
-      if (st.evDoc !== st.doc) { st.ev = evidence(d); st.evDoc = st.doc; }
-      el.rf.classList.add('clay');
-      frameTo(st.ev, anim ? 600 : 0);
-      st.userWhole = false;
-      if (!anim || reduce) setWhole(q.get('close') !== '1', true);
-      else {
-        setWhole(false, false);
-        wait(2300, function () { if (!st.userWhole && st.act === 2) setWhole(true, false, true); });
-      }
+      setWhole(true, true);
+      showLoupe(true);
     }
     /* ★ measured in idle after the frame is drawn: layout is clean, the read costs nothing */
     if (window.requestIdleCallback) requestIdleCallback(fitPanel, { timeout: 400 }); else setTimeout(fitPanel, 100);
     var big = $('#big'), n = digits(d.big);
     if (anim && !st.mail && !isNaN(n) && /^[+\d]/.test(d.big)) {
       var tpl = d.big.replace(/\d[\d  ]*\d/, '{n}');
-      setTimeout(function () { countText(big, 0, n, 700, tpl); }, 300);
+      /* v10: the number counts from zero in 0.8 s and grows a little (0.94 → 1) */
+      countText(big, 0, n, 800, tpl);
+      if (!reduce) big.animate([{ transform: 'scale(.94)' }, { transform: 'none' }], { duration: 800, easing: EASE });
     }
     big.classList.add('on');
+    /* v10 board: the robot is done — its time with a tick; the narrator: the person is still busy */
+    el.plB.classList.add('done');
+    el.bT.innerHTML = ICON.check + '<span>' + fmt1(d.time) + ' с</span>';
+    if (!st.ended) narrate(d.story[6], !anim);
     goal('hp_step2');
     if (phone()) scrollToY(el.scene.getBoundingClientRect().top + window.scrollY - headerH() - 8);
   }
@@ -1120,19 +1339,23 @@
     if (st.mail) { el.checks.innerHTML = ''; el.ckcur.className = 'ckcur'; } else renderChecks(d);
     el.cam.style.height = '';
     measure();
+    /* phone: the height of the camera window for the whole sheet (used from the lock on, written without a layout read) */
+    st.phCamH = phone() && st.SW ? Math.round(st.H * (st.cw - 16) / st.SW + 16) : 0;
+    st.loupeDoc = -1; el.loupe.className = 'loupe'; el.loupe.innerHTML = '';
     if (st.mail) zoomOnec();
     camKey(st.mail ? 'mail' : phone() ? 'full' : 'docs', true);   /* v9: on desktop the sheet stands in the left zone from the start */
     /* v9-add stages: the employee's tool, the gate, the pointer and the stopwatch start clean */
     renderTool(d); sizeTool(); renderGate($$('.pii', el.doc).length);
     st.sels.forEach(function (n) { n.remove(); }); st.sels = [];
     el.cur1.classList.remove('on', 'ib'); el.sw.textContent = '';
-    setSub('Работает человек', '', true);
+    resetBoard(d);
     if (mode === 'play') {
       if (!reduce) { el.sheet.style.opacity = '0'; requestAnimationFrame(function () { el.sheet.style.opacity = ''; }); }
       play(null, null, from);
     }
   }
-  function skipToVerdict() { stopAll(); play('end'); act2(false); }
+  /* "Пропустить": both places to their final state, the stage on the verdict */
+  function skipToVerdict() { stopAll(); play('end'); act2(false); humDone(true); }
 
   /* ---------- events ---------- */
   el.folders.addEventListener('click', function (e) { var b = e.target.closest('.fold'); if (!b) return; var i = +b.dataset.i; if (i !== st.doc) goal('hp_doc_switch', { doc: DOCS[i].id }); st.started = true; openDoc(i, 'play'); });
@@ -1149,6 +1372,10 @@
     else openDoc(st.doc, 'play', s === 1 ? null : s === 2 ? 'prot' : 'pgo');
   });
   el.skip.addEventListener('click', skipToVerdict);
+  /* v10 board: "Пропустить" / "Повторить"; the person's place restarts the run, the robot's place starts from the hand-off */
+  el.skip2.addEventListener('click', function () { if (st.ended) openDoc(st.doc, 'play'); else skipToVerdict(); });
+  el.plH.addEventListener('click', function () { openDoc(st.doc, 'play'); });
+  el.plB.addEventListener('click', function () { openDoc(st.doc, 'play', 'hand'); });
   /* a click before the automatic pull-back cancels it: from then on only the button drives the camera */
   el.whole.addEventListener('click', function () { if (st.act === 2 && !st.mail) { st.userWhole = true; setWhole(!st.whole); } });
   el.seg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setView(b.dataset.v); });
@@ -1177,6 +1404,8 @@
   var stage0 = +q.get('stage') || 0, hold = q.get('hold');
   if (q.has('n')) st.vol = +q.get('n');
   st.doc = doc0; renderFolders(); sizeScene();
+  /* P11, phone: the view switch goes under the verdict panel (board → source → narrator → panel → switch) */
+  if (phone()) el.box.appendChild($('#tools'));
   openDoc(doc0);
   if (hold) {
     /* v9 tags: pii, lock, rec (i = which record), col, err; 'read' = the first record */
@@ -1185,6 +1414,9 @@
     setSub(el.subT.textContent, hold === 'err' ? 'err' : (hold === 'pdone' || hold === 'mend') ? 'done' : hold === 'man' ? '' : 'live', true);
   } else if (stage0 >= 2 || (reduce && !stage0)) {
     play('end'); act2(false);
+    /* v10: a static verdict shows the person done; hum=run keeps him half-way (still going), without any timer */
+    if (q.get('hum') === 'run') { humStop(); st.h.f0 = performance.now() - 11000; humTick(); humStop(); }
+    else humDone(true);
     if (q.get('whole') === '1' && !st.mail) setWhole(true, true);
     if (stage0 === 3) {
       if (q.get('sent') === '1') {

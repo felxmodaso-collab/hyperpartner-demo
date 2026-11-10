@@ -654,6 +654,228 @@ a{color:inherit}
   .facts{grid-template-columns:1fr;gap:18px}
 }
 
+/* ===================== v10: who works is seen without reading ===================== */
+/* the step row and the subtitle capsule are gone; the board and the narrator take their place */
+.steps,.sub{display:none !important}
+/* two worlds: one stage variable (also used by the active folder tab), changes in 0.6 s */
+.plate{--stage:#DCE5E0;--stage-0:rgba(220,229,224,0)}
+.plate.w-hum{--stage:#E6E3DC;--stage-0:rgba(230,227,220,0)}
+.scene,.fold .front{transition:background-color .6s var(--ease)}
+/* the board: two places; the filled one is working (person — graphite, robot — forest); the other is an outline */
+.sbar{height:72px}
+.board{display:flex;align-items:center;gap:0;flex:1;min-width:0}
+.pl{position:relative;flex:none;display:grid;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:12px;align-items:center;align-content:center;
+  width:360px;height:56px;padding:0 16px 0 8px;border:1.5px solid rgba(30,29,26,.2);border-radius:16px;background:transparent;color:rgba(30,29,26,.5);text-align:left;
+  transition:background-color .6s var(--ease),color .6s var(--ease),border-color .6s var(--ease)}
+.pl .av{grid-row:1/3;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%}
+.pl .av svg{width:22px;height:22px}
+.pl.hum .av{background:#D6D2C9;color:#3A3835}
+.pl.bot .av{background:#CDEBE2;color:#16735F}
+.pl .nm{grid-column:2;font-size:var(--fs-20);font-weight:600;line-height:1.15}
+.pl .stt{grid-column:2;font-size:var(--fs-18);line-height:1.2;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl .stt:empty{display:none}
+.pl .tm{grid-column:3;grid-row:1/3;display:flex;align-items:center;gap:6px;font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.pl .tm .ic{width:22px;height:22px;color:var(--mint-bright)}
+.pl .acc{position:absolute;right:16px;top:2px;font-size:14px;font-style:normal;opacity:0}
+.pl.bg:not(.done) .acc{opacity:.75}
+.pl .bar{position:absolute;left:60px;right:16px;bottom:5px;height:3px;overflow:hidden;border-radius:2px;background:rgba(30,29,26,.14);opacity:0}
+.pl.bg .bar{opacity:1}
+.pl .bar i{display:block;height:100%;background:currentColor;transform:scaleX(0);transform-origin:0 50%;transition:transform .25s linear}
+.pl.hum.on{border-color:#3A3835;background:#3A3835;color:#F3F1EC}
+.pl.hum.on .av{background:#57534D;color:#F3F1EC}
+.pl.bot.on{border-color:var(--forest);background:var(--forest);color:var(--cream)}
+.pl.bot.on .av{background:#2B5249;color:var(--mint-bright)}
+.pl.hum.bg{color:rgba(30,29,26,.7)}
+/* the result between the two places: one number */
+.res{flex:none;width:232px;display:flex;justify-content:center;opacity:0;transform:scale(.8);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.res.on{opacity:1;transform:none}
+.res span{padding:10px 18px;border-radius:999px;background:var(--forest);color:var(--cream);font-size:22px;font-weight:600;line-height:1.2;white-space:nowrap}
+.skip2{flex:none;margin-left:auto;padding:8px 4px;font-size:var(--fs-18);font-weight:600;color:var(--mint-deep);text-decoration:underline;text-underline-offset:4px}
+/* the narrator: one large line under the source, no capsule */
+.nar{position:absolute;z-index:3;left:20px;bottom:64px;width:calc(56% - 30px);height:40px;margin:0;overflow:hidden;font-size:var(--fs-28);font-weight:500;line-height:40px;color:var(--ink);white-space:nowrap}
+.scene.mailmode .nar{width:calc(54% - 30px)}
+.nar .nl{display:block}
+.nar .nl.out{position:absolute;left:0;top:0}
+.nar b{font-weight:700;color:#B05E37}
+.scene.act3 .nar{opacity:0}
+/* the view switch and "Крупно" on the verdict: a second row under the narrator */
+@media (min-width:900px){ .scene .tools{position:absolute;z-index:4;left:20px;bottom:12px} }
+/* the person's pointer: 28 px with his name, the robot's frame: its name on the top-left corner */
+.cur1 .ar{width:28px;height:39px}
+.cur1 .ctag{position:absolute;left:22px;top:32px;padding:3px 8px;border-radius:6px;background:#3A3835;color:#FFF;font:600 15px/1.2 var(--font);white-space:nowrap}
+.cur1.ib .ctag{left:12px;top:16px}
+.rtag{position:absolute;z-index:6;left:0;top:0;transform-origin:0 0;padding:3px 8px;border-radius:6px 6px 6px 0;background:#16735F;color:#FFF;font:600 15px/1.2 var(--font);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+.rf.on + .rtag{opacity:1}
+.rf.grab #rr,.rf.grab #rg,.rf.grab #rc{transform-box:fill-box;transform-origin:center;animation:grab .35s var(--ease) 1}
+@keyframes grab{50%{transform:scale(1.06)}}
+/* the button lights up once when the result is in */
+.cta{position:relative}
+.cta.glow::after{content:"";position:absolute;inset:-6px;border:2px solid var(--mint-bright);border-radius:inherit;opacity:0;pointer-events:none;animation:ring .9s ease 1}
+@keyframes ring{50%{opacity:.5}}
+/* the robot's receiver is locked: the panel itself (forest) / a forest veil over the 1C window; the lock opens when the counter is full */
+.gate{border:0;background:var(--forest);color:var(--cream)}
+.scene.mailmode .gate{border-radius:6px;background:rgba(22,48,43,.95)}
+.scene.st-prot .checks{opacity:1}
+.scene.mailmode.st-prot .onec{opacity:1}
+.gate b{color:var(--cream)}
+.gate .gc{color:rgba(241,237,228,.72)}
+.gate .gl{color:var(--mint-bright)}
+.gate .gl i{display:block;width:100%;height:100%}
+.gate .gl .o,.gate.open .gl .c{display:none}
+.gate.open .gl .o{display:block}
+/* the person's windows: Windows 11 chrome */
+.tool{border:1px solid #E5E5E5;border-radius:8px}
+.tool .wt{justify-content:flex-start;gap:10px;height:34px;padding:0 0 0 12px;border-bottom:0;background:#F3F3F3;font-size:14px;color:#1F1F1F}
+.tool .wt .ai{flex:none;width:16px;height:16px;border-radius:4px}
+.tool .wt span{flex:1}
+.tool .wt .wc{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:34px;font-size:12px;font-style:normal;color:#333}
+.tool .wb{padding:12px;background:#F3F3F3}
+.tool.calc .tape{min-height:0;padding:0 4px;font-size:14px;color:#666}
+.tool.calc .tl{height:auto;padding:0 4px 8px;border:0;font-size:28px;font-weight:600}
+.tool .keys b{border-color:#E5E5E5;background:#F9F9F9;font-size:18px}
+.tool .keys b.op{background:#F6F6F6}
+.tool .keys b[data-key="="]{border-color:#0067C0;background:#0067C0;color:#FFF}
+.tool .tabs1{display:flex;margin:-12px -12px 0;padding:6px 8px 0;background:#F3F3F3}
+.tool .tabs1 .tab{padding:6px 14px;border-radius:6px 6px 0 0;background:#FFF;font-size:13px}
+.tool .menu{margin:0 -12px;padding:6px 12px;gap:18px;border-bottom:1px solid #E5E5E5;background:#FFF;font-size:14px}
+.tool.notes .wb,.tool.tnved .wb{background:#FFF}
+.tool.notes .area{padding:8px 2px;border:0;font-size:16px}
+.tool .addr{margin:0 -12px;padding:6px 12px;border-bottom:1px solid #E5E5E5;background:#FFF}
+.tool .addr span{display:block;padding:5px 14px;border-radius:16px;background:#F1F3F4;font-size:13px;color:#555}
+/* the 1C window no longer rises into the top row (the board is there); the mail lock veil sits over it */
+@media (min-width:900px){
+  .onec,.scene.mailmode .onec{top:0}
+  .scene.mailmode.act2 .onec{transform:translateX(calc(10px - 54cqw))}
+  .scene.mailmode .gate{top:0;z-index:6}
+}
+.pl .bar{bottom:-1.5px;left:14px;right:14px}
+/* the 1C "Проведение" toast leaves like a system toast after 1.6 s, so it never covers the narrator on the verdict */
+.scene.mailmode.act2 .onec .ntf.on{opacity:0;transition-delay:1.6s}
+@media (min-width:900px) and (max-height:759px){
+  .scene.mailmode.act2 .onec{transform:translateX(calc(10px - 54cqw))}
+  .nar{font-size:24px;bottom:56px;height:34px;line-height:34px}
+  .sbar{height:64px}
+}
+@media (max-width:899px){
+  .board{flex-wrap:wrap;gap:8px;width:100%}
+  .pl{flex:1 1 0;width:auto;height:52px;grid-template-columns:32px minmax(0,1fr) auto;column-gap:8px;padding:0 10px 0 6px}
+  .pl .av{width:32px;height:32px}
+  .pl .av svg{width:18px;height:18px}
+  .pl .nm{font-size:var(--fs-18)}
+  .pl .tm{font-size:var(--fs-20)}
+  .pl:not(.on) .stt,.pl .acc{display:none}
+  .res{display:none}
+  .sbar{height:auto}
+  .board{row-gap:2px}
+  /* phone: name on the first line, the clock / time on the second */
+  .pl .nm{grid-row:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pl .tm{grid-column:2;grid-row:2;font-size:var(--fs-18)}
+  .pl .stt{display:none}
+  .skip2{order:5;width:100%;padding:0 4px;text-align:right}
+  .sbox{overflow-x:clip}
+  .nar{position:relative;left:auto;bottom:auto;width:auto;height:28px;margin:16px 12px 0;font-size:var(--fs-20);line-height:28px}
+}
+
+/* ===================== v10-polish ===================== */
+/* P5: two worlds you can see; the robot's world comes as a shutter from the right (one layer under the content, transform only) */
+.scene{background:#EBE3D2;transition:none}
+.cam::after{display:none}
+.shade{position:absolute;inset:0;z-index:0;border-radius:inherit;background:#D3E4DD;transform:translateX(100%);transition:transform .6s var(--ease);will-change:transform;pointer-events:none}
+.shade.in{transform:none}
+.sbar,.sbox{position:relative;z-index:1}
+.fold[aria-selected="true"] .front{background:#EBE3D2;transition:background-color .6s var(--ease)}
+.folders.w-bot .fold[aria-selected="true"] .front{background:#D3E4DD}
+/* P10: the white "sheet" strips over the tabs go; the mail tab keeps its envelope */
+.fold:not(.env) .paper{display:none}
+.fold.env .paper{background:none;box-shadow:none}
+/* P7, P8: the board — text centred, the progress line under the text on the bottom edge, no "ускорено", no result plate */
+.res,.pl .acc{display:none}
+.pl .bar{left:16px;right:16px;bottom:0;height:3px;border-radius:0 0 2px 2px}
+.pl.bot .nm{grid-row:1/3}
+/* P3: the view switch in the top row on the right; "Крупно" is gone (the magnifier replaces it); under the sheet only the narrator */
+.whole{display:none !important}
+@media (min-width:900px){ .scene .tools{position:static} }
+.nar{bottom:12px}
+@media (min-width:900px) and (max-height:759px){ .nar{bottom:10px} }
+/* P4: the robot's frame — 3 px line on a soft mint glow; no "Робот" tag on the clay verdict frame */
+.rf #rr{stroke-width:3}
+/* the tag outside the sheet's right edge is drawn over the robot's panel padding, not under it */
+@media (min-width:900px){ .scene:not(.mailmode) .cam{z-index:3;pointer-events:none} .scene:not(.mailmode) .sheet{pointer-events:auto} }
+.rf.clay + .rtag{opacity:0}
+/* P2: the magnifier on the finding — white card, 2 px clay, radius 12, one shadow, a small tail to the frame */
+.loupe{position:absolute;z-index:7;display:none;padding:12px 14px;border:2px solid var(--clay);border-radius:12px;background:#FFF;box-shadow:0 8px 24px rgba(22,48,43,.18)}
+.loupe.on{display:block}
+.loupe .doc{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;transform-origin:0 0}
+.loupe::after{content:"";position:absolute;width:12px;height:12px;background:#FFF;border:2px solid var(--clay);transform:rotate(45deg)}
+.loupe.t-r::after{right:-8px;top:50%;margin-top:-7px;border-left:0;border-bottom:0}
+.loupe.t-t::after{top:-8px;left:50%;margin-left:-7px;border-right:0;border-bottom:0}
+.loupe.t-b::after{bottom:-8px;left:50%;margin-left:-7px;border-left:0;border-top:0}
+/* the record's mark is drawn by a one-shot animation (the transition did not run on records added live) */
+.ck .ci svg path[pathLength]{stroke-dasharray:1;stroke-dashoffset:1}
+.ck.ok .ci svg path[pathLength],.ck.in.ok svg path{stroke-dashoffset:0;animation:tick1 .3s var(--ease) both}
+@keyframes tick1{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+/* P2+: the reading magnifier — born at the frame (mint), holds, flies into the panel and becomes the record */
+.lens{position:absolute;display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:2px solid var(--mint);border-radius:12px;background:#FFF;
+  box-shadow:0 8px 24px rgba(22,48,43,.18);color:var(--ink);pointer-events:none;will-change:transform,opacity}
+.lens .lb{font-size:var(--fs-18);font-weight:400;color:var(--ink-2)}
+.lens b{font-size:var(--fs-20);font-weight:600;white-space:nowrap}
+.lens .ln{font-size:var(--fs-20);text-align:right;font-variant-numeric:tabular-nums}
+.lens .sum{margin-top:4px;padding-top:4px;border-top:1.5px solid var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.lens::after{content:"";position:absolute;top:50%;width:12px;height:12px;margin-top:-7px;background:#FFF;border:2px solid var(--mint);transform:rotate(45deg)}
+.lens.t-l::after{left:-8px;border-top:0;border-right:0}
+.lens.t-r::after{right:-8px;border-left:0;border-bottom:0}
+/* P8: the second line of the verdict */
+.panel .v2{margin:10px 0 0;font-size:var(--fs-28);font-weight:600;line-height:1.2;color:var(--cream)}
+.panel .v2 b{font-weight:600;color:var(--mint-bright)}
+/* P6: compact windows overlapping the sheet's right edge; a 32 px pointer with a 16/600 tag */
+.tool{right:auto;width:320px;height:auto}
+.tool.notes,.tool.tnved{width:380px}
+.tool .wb{flex:none}
+.tool .keys{flex:none;grid-auto-rows:44px}
+.tool.notes .area{min-height:150px}
+.cur1 .ar{width:32px;height:45px}
+.cur1 .ctag{left:26px;top:36px;font-size:16px}
+/* P6: the robot waits backstage — the edge of its panel (88 px) with its sign while the person works; then it slides in */
+.checks{transition:transform .6s var(--ease),opacity .4s var(--ease)}
+.scene:not(.mailmode).st-man .checks{opacity:1;transform:translateX(calc(100% - 88px))}
+.scene.st-man .checks>*{opacity:0}
+.checks::after{content:"";position:absolute;left:24px;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;opacity:0;pointer-events:none;
+  background:#2B5249 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 6l6 6-6 6M12 6l6 6-6 6' fill='none' stroke='%232EC4A0' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/22px no-repeat;transition:opacity .3s var(--ease)}
+.scene.st-man .checks::after{opacity:1}
+@media (max-width:899px){
+  /* P5 on the phone: the shutter by clip (the stage is not clipped here) */
+  .shade{transform:none;clip-path:inset(0 0 0 100%);transition:clip-path .6s var(--ease)}
+  .shade.in{clip-path:inset(0)}
+  /* P11: the fixed button never covers content; the header button 16 px from the edge */
+  .scene.act2 .sbox{padding-bottom:88px}
+  .hdr-in{padding-left:16px;padding-right:16px}
+  .pl.bot .nm{grid-row:1}
+  .loupe{padding:10px}
+}
+
+/* ===================== v10-polish 2 ===================== */
+/* 1: the board — 12 px between the places; Пропустить/Повторить always at the right edge (left of the view switch on the verdict);
+   a name without a state line is centred */
+.board{gap:12px}
+@media (min-width:900px){ .scene:not(.act2) .tools{display:none} }
+.pl:has(.stt:empty) .nm{grid-row:1/3}
+/* 2: one line for the source and the receiver: 16 px under the board (the board ends 8 px above the stage box) */
+@media (min-width:900px){
+  .panel,.checks,.gate,.scene.mailmode .gate,.onec,.scene.mailmode .onec{top:8px}
+  /* 7: the 1C window keeps the same 20 px to the narrator as the sheet */
+  .scene.mailmode .onec,.scene.mailmode .gate{bottom:72px}
+}
+@media (max-width:899px){
+  /* 5: phone, beat A — a lower window, the narrator and the input line on the first screen; a 24 px pointer, its tag flips left */
+  .scene:not(.act2):not(.act3) .cam{height:240px}
+  .cur1 .ar{width:24px;height:34px}
+  .cur1 .ctag{left:20px;top:28px;font-size:15px}
+  .cur1.flip .ctag{left:auto;right:6px}
+  .pl:has(.stt:empty) .nm,.pl .nm{grid-row:1}
+  /* 6: the fixed button sits on a solid forest band, so no panel text shows through */
+  .scene.act2 .panel::after{content:"";position:fixed;left:0;right:0;bottom:0;z-index:29;height:calc(84px + env(safe-area-inset-bottom));background:var(--forest)}
+}
+
 /* reduced motion and ?static=1: final states */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 .static *,.static *::before,.static *::after{transition:none!important;animation:none!important}

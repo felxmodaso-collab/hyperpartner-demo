@@ -44,6 +44,7 @@
 
     <!-- the scene: one rounded stage; the sheet lives in a camera window; a forest panel joins in acts 2-3 -->
     <section class="scene" id="scene" aria-label="Демо">
+      <i class="shade" id="shade" aria-hidden="true"></i>
       <div class="sbar">
         <ol class="steps" id="steps">
           <li data-s="1"><button type="button"><span class="n">1</span><span class="w">Вручную</span></button></li>
@@ -51,6 +52,13 @@
           <li data-s="3"><button type="button"><span class="n">3</span><span class="w">Проверка</span></button></li>
           <li data-s="4"><button type="button"><span class="n">4</span><span class="w">Расчёт</span></button></li>
         </ol>
+        <!-- v10: the board of the two actors — each has its own place, colour, sign and name; the filled place is the one working -->
+        <div class="board" id="board">
+          <button type="button" class="pl hum" id="plH"><i class="av"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4" fill="currentColor"/><path d="M4.5 20.5c.8-4 3.9-6.3 7.5-6.3s6.7 2.3 7.5 6.3" fill="currentColor"/></svg></i><span class="nm" id="hN">Сотрудник</span><span class="stt" id="hS"></span><b class="tm" id="hT">0:00</b><i class="acc">ускорено</i><i class="bar"><i id="hB"></i></i></button>
+          <span class="res" id="resB" aria-live="polite"></span>
+          <button type="button" class="pl bot" id="plB"><i class="av"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6l6 6-6 6M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="nm">Робот</span><b class="tm" id="bT"></b></button>
+          <button type="button" class="skip2" id="skip2">Пропустить</button>
+        </div>
         <div class="tools" id="tools">
         <button type="button" class="whole" id="whole">Весь документ</button>
         <div class="seg" id="seg" role="group" aria-label="Вид документа">
@@ -63,9 +71,11 @@
       <div class="sbox" id="box">
         <div class="cam" id="cam">
           <div class="sheet" id="sheet"><div class="doc" id="doc"></div>
-            <svg class="rf" id="rf" aria-hidden="true"><path id="veil" fill-rule="evenodd"></path><rect id="rg" rx="10" ry="10"></rect><rect id="rr" rx="7" ry="7"></rect><path id="rc"></path></svg>
+            <svg class="rf" id="rf" aria-hidden="true"><path id="veil" fill-rule="evenodd"></path><rect id="rg" rx="10" ry="10"></rect><rect id="rr" rx="7" ry="7"></rect><path id="rc"></path></svg><span class="rtag" id="rtag">Робот</span><div class="loupe" id="loupe" aria-hidden="true"></div>
           </div>
         </div>
+        <!-- v10: the narrator — one large line under the source -->
+        <p class="nar" id="nar" aria-live="polite"></p>
         <div class="tool" id="tool" aria-hidden="true"></div>
         <div class="gate" id="gate" role="status"></div>
         <div class="ckcur" id="ckcur" aria-live="polite"></div>
@@ -76,7 +86,7 @@
         <aside class="checks" id="checks" aria-live="polite"></aside>
         <aside class="panel" id="panel"></aside>
         <!-- stage 1: the employee's mouse pointer (arrow / I-beam), moved by transform only -->
-        <div class="cur1" id="cur1" aria-hidden="true"><svg class="ar" viewBox="0 0 20 28"><path d="M1.5 1.5v21.2l5.2-5 3.6 8.3 3.4-1.5-3.6-8.1h7.3z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/></svg><svg class="ib" viewBox="0 0 12 24"><path d="M2 2h3l1 1 1-1h3M6 3v18M2 22h3l1-1 1 1h3" fill="none" stroke="#fff" stroke-width="3.2"/><path d="M2 2h3l1 1 1-1h3M6 3v18M2 22h3l1-1 1 1h3" fill="none" stroke="#000" stroke-width="1.3"/></svg></div>
+        <div class="cur1" id="cur1" aria-hidden="true"><svg class="ar" viewBox="0 0 20 28"><path d="M1.5 1.5v21.2l5.2-5 3.6 8.3 3.4-1.5-3.6-8.1h7.3z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/></svg><svg class="ib" viewBox="0 0 12 24"><path d="M2 2h3l1 1 1-1h3M6 3v18M2 22h3l1-1 1 1h3" fill="none" stroke="#fff" stroke-width="3.2"/><path d="M2 2h3l1 1 1-1h3M6 3v18M2 22h3l1-1 1 1h3" fill="none" stroke="#000" stroke-width="1.3"/></svg><span class="ctag" id="ctag">Сотрудник</span></div>
       </div>
     </section>
   </div>
