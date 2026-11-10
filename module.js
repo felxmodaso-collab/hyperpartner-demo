@@ -833,7 +833,7 @@
       '<div class="vs"><div><span>Вручную</span><b>' + d.calc.min + ' мин</b></div><div class="rb"><span>Робот</span><b>' + fmt1(d.time) + ' с</b></div></div>' +
       '<p class="cap">Дальше без человека</p>' +
       '<ul class="acts">' + d.acts.map(function (a) { return '<li>' + ICON.check + '<span>' + esc(a) + '</span></li>'; }).join('') + '</ul>' +
-      (d.note ? '<p class="note">' + esc(d.note) + '</p>' : '') +
+      (typeof d.note === 'string' ? '<p class="note">' + esc(d.note) + '</p>' : '') +
       '<button class="cta" id="cta" type="button" data-go="3"><span>Посчитать для моего потока</span> <span class="arr" aria-hidden="true">→</span></button></div>';
     st.pre2 = st.doc;
   }
