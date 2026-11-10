@@ -1,0 +1,505 @@
+/* HyperPartner demo module v7 — "the frame is the agent's hand, the camera follows it, one big subtitle, one verdict".
+   Light and contrasting: a white sheet on a darker stage; one forest panel on the right in acts 2-3.
+   IBM Plex Sans 400/600 only, tabular figures. Nothing outside the sheet is smaller than 18 px (consent: 16). */
+:root{
+  --paper:#F5F4F0; --ink:#1E1D1A; --ink-2:rgba(30,29,26,.72); --hair:#EAE4DA;
+  /* three surfaces apart in tone and temperature: warm page, cold grey-mint stage, white sheet */
+  --stage:#DCE5E0; --stage-0:rgba(220,229,224,0); --sheet:#FFFFFF; --onec:#F3E08C; --forest-2:#1F3D37;
+  --ink-55:rgba(30,29,26,.55);
+  --forest:#16302B; --cream:#F1EDE4; --cream-2:rgba(241,237,228,.82);
+  --kraft:#E3D9C6; --kraft-back:#D6C3A6;
+  --clay:#CB7A52; --clay-deep:#B05E37; --peach:#F7CFB4;
+  --mint:#1F9C84; --mint-deep:#16735F; --mint-bright:#27B499;
+  --redact:#45433F; --track:rgba(30,29,26,.14);
+  --mint-a14:rgba(39,180,153,.14); --mint-a40:rgba(39,180,153,.4); --clay-a14:rgba(203,122,82,.14);
+  --doc-ink:#2B2A28; --doc-mute:#69665F; --doc-rule:#B9B6B0; --doc-fill:#F2F1EE; --stamp:#3A55A6; --sig:#2B3F8F;
+
+  --g-cta:linear-gradient(120deg,#27B499,#16735F);
+
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-doc:Arial,Helvetica,sans-serif;
+  --fs-16:16px; --fs-18:18px; --fs-20:20px; --fs-28:28px;
+  --fs-big:clamp(64px,6.6vw,96px);
+  --fs-h1:clamp(28px,min(4vw,5.6vh),56px);
+  --fs-h1-line:clamp(28px,5.2vh,36px);
+  --fs-doc:13px; --fs-doc-h:17px; --fs-doc-cap:9px; --fs-doc-mail:19px;
+
+  --r-6:6px; --r-11:11px; --r-16:16px; --r-24:24px; --r-pill:999px; --r-round:50%;
+  --shadow-sheet:0 2px 6px rgba(30,29,26,.08),0 30px 60px -28px rgba(30,29,26,.45);
+  --shadow-cta:0 14px 30px -12px rgba(22,115,95,.55);
+
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --d-1:.3s; --d-2:.5s; --d-3:.8s;
+  --frame:1280px; --gut:24px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:var(--fs-20);line-height:1.4;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-x:clip}
+button,input{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--mint-deep);outline-offset:2px}
+.ic{display:block;width:22px;height:22px;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- header, title ---------- */
+.hdr{position:sticky;top:0;z-index:40;height:60px;background:var(--forest)}
+.hdr-in{max-width:var(--frame);height:100%;margin:0 auto;padding:0 var(--gut);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand img{display:block;height:20px;width:auto}
+.btn-hdr{display:inline-flex;align-items:center;height:42px;padding:0 18px;border-radius:var(--r-11);background:var(--clay);color:var(--sheet);font-size:var(--fs-18);font-weight:600;text-decoration:none;white-space:nowrap}
+.frame{max-width:calc(var(--frame) + 2 * var(--gut));margin:0 auto;padding:0 var(--gut) 40px}
+.head{margin:20px auto 14px;text-align:center;font-size:var(--fs-h1);font-weight:400;line-height:1.08;letter-spacing:-.025em}
+.head .ln{display:inline-block}
+.head em{font-style:normal;color:var(--mint-deep)}
+@media (min-width:900px){.head .ln{display:block}}
+
+/* ---------- folders: tabs of the stage standing on the page; the active one is the stage colour and merges with it ---------- */
+.plate{position:relative}
+/* ★ the row is reserved before the script draws the tabs: the scene never jumps down on a slow load */
+.folders{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:0;min-height:58px}
+.fold{position:relative;display:block;height:58px;text-align:left}
+.fold .paper{position:absolute;left:14px;right:14px;top:2px;height:34px;border-radius:var(--r-6);background:var(--sheet);transform:translateY(4px);transition:transform var(--d-2) var(--ease)}
+.fold .paper::before,.fold .paper::after{content:"";position:absolute;left:12px;height:3px;border-radius:var(--r-6);background:var(--hair)}
+.fold .paper::before{top:6px;width:44%}
+.fold .paper::after{top:12px;width:66%}
+.fold .paper svg{position:absolute;left:50%;top:3px;width:30px;height:16px;margin-left:-15px;color:var(--ink-55)}
+.fold.env .paper::before,.fold.env .paper::after{display:none}
+.fold .front{position:absolute;left:0;right:0;bottom:4px;height:40px;display:flex;align-items:center;padding:0 14px;border-radius:var(--r-11);background:var(--kraft);transition:transform var(--d-2) var(--ease)}
+.fold .front b{position:relative;font-size:var(--fs-18);font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fold:hover .paper{transform:translateY(0)}
+.fold[aria-selected="true"] .paper{transform:translateY(-2px)}
+.fold[aria-selected="true"] .front{bottom:0;height:44px;border-radius:var(--r-11) var(--r-11) 0 0;background:var(--stage)}
+.fold[aria-selected="true"] .front b{color:var(--ink)}
+
+/* ---------- the scene ---------- */
+.scene{position:relative;display:flex;flex-direction:column;height:640px;border-radius:var(--r-24);background:var(--stage);overflow:hidden}
+.scene.first{border-top-left-radius:0}
+@media (min-width:900px){.scene{contain:layout paint}}
+.sbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;height:60px;padding:0 20px}
+.steps{display:flex;gap:6px;margin:0;padding:0;list-style:none}
+/* steps without pills: a digit in a circle + the word; active ink 600, the rest ink .55 */
+.steps button{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px 0 0;color:var(--ink-55);font-size:var(--fs-18);white-space:nowrap}
+.steps .n{display:grid;place-items:center;width:28px;height:28px;border:1.5px solid currentColor;border-radius:var(--r-round);font-weight:600;line-height:1}
+.steps .n .ic{width:16px;height:16px}
+.steps .on button{color:var(--ink);font-weight:600}
+.steps .on .n{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+.steps .done .n{color:var(--mint-deep)}
+/* view tools appear only with the verdict */
+.tools{display:flex;align-items:center;gap:14px;opacity:0;visibility:hidden;transition:opacity var(--d-1) var(--ease)}
+.scene.act2 .tools{opacity:1;visibility:visible}
+.scene.mailmode .tools{display:none}
+.whole{height:40px;padding:0 6px;color:var(--mint-deep);font-size:var(--fs-18);font-weight:600;text-decoration:underline;text-underline-offset:4px}
+.seg{position:relative;display:flex;padding:4px;border-radius:var(--r-pill);background:var(--sheet);transition:opacity var(--d-1) var(--ease)}
+.seg .thumb{position:absolute;left:0;top:4px;bottom:4px;width:100px;border-radius:var(--r-pill);background:var(--forest);transform-origin:0 50%;transition:transform var(--d-2) var(--ease)}
+.seg button{position:relative;height:40px;padding:0 18px;border-radius:var(--r-pill);color:var(--ink-2);font-size:var(--fs-18);white-space:nowrap}
+.seg button[aria-pressed="true"]{color:var(--cream);font-weight:600}
+.scene.act3 .seg{opacity:0;visibility:hidden;pointer-events:none}
+
+.sbox{position:relative;flex:1;min-height:0}
+/* camera window: the sheet is moved and scaled inside it (transform only) */
+.cam{position:absolute;inset:0;overflow:hidden}
+.sheet{position:absolute;left:0;top:0;width:720px;min-height:520px;border-radius:var(--r-6);background:var(--sheet);box-shadow:var(--shadow-sheet);transform-origin:0 0;transition:opacity var(--d-2) var(--ease)}
+/* will-change only while the camera travels: a still sheet is re-rasterised sharp at the focus scale */
+.sheet.moving{transition:transform var(--d-3) var(--ease),opacity var(--d-2) var(--ease);will-change:transform}
+.scene.act3 .sheet{opacity:0}
+
+/* subtitle: one forest capsule at the bottom of the stage */
+/* fixed width: a new text never moves the capsule (no layout shift) */
+.sub{position:absolute;left:20px;right:20px;bottom:22px;z-index:4;width:min(860px,calc(100% - 40px));margin:0 auto;display:flex;align-items:center;gap:16px;min-height:64px;padding:10px 12px 10px 24px;border-radius:var(--r-pill);background:var(--forest);color:var(--cream);font-size:var(--fs-28);line-height:1.2;transition:opacity var(--d-1) var(--ease)}
+/* cross-fade: the new line appears over the leaving one, the capsule is never empty */
+.sub .st{position:relative;display:block;flex:1;min-width:0}
+.sub #subT{display:block}
+.sub #subT.fadein{animation:subin .25s var(--ease) both}
+.sub .ghost{position:absolute;left:0;top:0;right:0;pointer-events:none;animation:subout .25s var(--ease) both}
+@keyframes subin{from{opacity:0}to{opacity:1}}
+@keyframes subout{from{opacity:1}to{opacity:0}}
+/* act 1: the bottom of the stage fades into the stage colour, the capsule stands on a clean field */
+.cam::after{content:"";position:absolute;left:0;right:0;bottom:0;height:110px;background:linear-gradient(180deg,var(--stage-0),var(--stage) 70%);pointer-events:none;transition:opacity var(--d-2) var(--ease)}
+.scene.act2 .cam::after,.scene.act3 .cam::after{opacity:0}
+.sub .dot{position:relative;width:12px;height:12px;flex:none;border-radius:var(--r-round);background:var(--mint-bright)}
+.sub .dot::after{content:"";position:absolute;inset:-6px;border-radius:var(--r-round);background:var(--mint-a40);opacity:0}
+/* the one infinite animation, only while the run is live */
+.sub.live .dot::after{animation:ping 1.4s var(--ease) infinite}
+.sub.err .dot{background:var(--clay)}
+.sub .skip{flex:none;height:44px;padding:0 18px;border-radius:var(--r-pill);background:var(--cream-2);color:var(--forest);font-size:var(--fs-18);font-weight:600}
+.sub.done .skip{display:none}
+.scene.act2 .sub,.scene.act3 .sub{opacity:0;pointer-events:none}
+@keyframes ping{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.5)}}
+
+/* ---------- the forest panel (acts 2-3) ---------- */
+.panel{position:absolute;z-index:3;top:0;right:20px;bottom:20px;width:calc(44% - 30px);display:flex;flex-direction:column;justify-content:center;padding:40px;border-radius:var(--r-24);background:var(--forest);color:var(--cream);opacity:0;transform:translateX(40px);pointer-events:none;transition:opacity var(--d-2) var(--ease),transform var(--d-3) var(--ease)}
+.scene.act2 .panel,.scene.act3 .panel{opacity:1;transform:none;pointer-events:auto}
+.panel h2{margin:0;font-size:var(--fs-28);font-weight:400;line-height:1.2;letter-spacing:-.01em}
+.panel .big{margin:14px 0 0;font-size:var(--fs-big);font-weight:600;line-height:1;letter-spacing:-.03em;color:var(--peach);white-space:nowrap}
+.panel .why{margin:18px 0 0;color:var(--cream-2)}
+.panel .big.ok{color:var(--mint-bright)}
+/* "further without a person": three lines, the ticks are drawn one by one */
+.panel .cap{margin:20px 0 0;color:var(--cream-2);font-size:var(--fs-18)}
+.panel .acts{margin:8px 0 0;padding:0;list-style:none}
+.panel .acts li{display:flex;align-items:flex-start;gap:12px;padding:3px 0;line-height:1.3}
+.panel .acts .ic{margin-top:1px;color:var(--mint-bright)}
+.panel .acts .ic path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset var(--d-2) var(--ease)}
+.panel .acts li:nth-child(1) .ic path{transition-delay:.7s}
+.panel .acts li:nth-child(2) .ic path{transition-delay:1.05s}
+.panel .acts li:nth-child(3) .ic path{transition-delay:1.4s}
+.scene.act2 .panel .acts .ic path{stroke-dashoffset:0}
+/* notification to the responsible employee: arrives last */
+.panel .note{margin:16px 0 0;padding:14px 18px;border-radius:var(--r-16);background:var(--forest-2);color:var(--cream);font-size:var(--fs-18);line-height:1.35;animation:notein var(--d-2) var(--ease) 1.9s both}
+@keyframes notein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.panel.compact{padding-top:22px;padding-bottom:22px}
+.panel.compact .big{margin-top:8px}
+.panel.compact .why,.panel.compact .cap{margin-top:10px}
+.panel.compact .acts{margin-top:4px}
+.panel.compact .acts li{padding:0;line-height:1.25}
+.panel.compact .note{margin-top:10px;padding:8px 14px;line-height:1.25}
+.panel.compact .cta{margin-top:14px}
+.panel.tight .why{display:none}
+.cta,.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:60px;flex:none;margin-top:28px;padding:0 24px;border-radius:var(--r-pill);background:var(--g-cta);box-shadow:var(--shadow-cta);color:var(--sheet);font-size:var(--fs-20);font-weight:600;transition:transform var(--d-1) var(--ease)}
+.cta:hover,.btn:hover{transform:translateY(-1px)}
+.cta .arr{display:inline-block;transition:transform var(--d-1) var(--ease)}
+.cta:hover .arr{transform:translateX(3px)}
+.pin>*{animation:rise var(--d-2) var(--ease) both}
+.pin>*:nth-child(2){animation-delay:.06s}
+.pin>*:nth-child(3){animation-delay:.12s}
+.pin>*:nth-child(4){animation-delay:.18s}
+.pin>*:nth-child(5){animation-delay:.24s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* form on forest */
+.panel form{display:flex;flex-direction:column;margin-top:22px}
+.panel .s{margin:10px 0 0;color:var(--cream-2)}
+.fl{margin-bottom:12px}
+.inp{display:block;width:100%;height:60px;padding:0 20px;border:2px solid transparent;border-radius:var(--r-16);background:var(--cream);color:var(--ink);font-size:var(--fs-20)}
+.inp::placeholder{color:var(--ink-2);opacity:1}
+.inp.bad{border-color:var(--peach)}
+.etx{margin:6px 0 0;color:var(--peach);font-size:var(--fs-18)}
+.etx:empty{display:none}
+.ac{position:relative}
+.acp{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:5;display:none;overflow:hidden;border-radius:var(--r-16);background:var(--sheet);color:var(--ink)}
+.ac.open .acp{display:block}
+.acp button{display:block;width:100%;padding:10px 20px;text-align:left;font-size:var(--fs-20);font-weight:600}
+.acp button+button{border-top:1px solid var(--hair)}
+.acp button:hover,.acp button.hi{background:var(--paper)}
+.acp small{display:block;overflow:hidden;color:var(--ink-2);font-size:var(--fs-18);font-weight:400;white-space:nowrap;text-overflow:ellipsis}
+.chk{display:flex;align-items:flex-start;gap:12px;min-height:40px;padding-top:4px;color:var(--cream);font-size:var(--fs-16);line-height:1.4;cursor:pointer}
+.chk input{width:22px;height:22px;margin:0;flex:none;accent-color:var(--mint-bright)}
+.chk a{color:var(--cream)}
+.btn.busy span{opacity:0}
+.btn .dots{position:absolute;display:none;gap:6px}
+.btn.busy .dots{display:flex}
+.dots i{width:8px;height:8px;border-radius:var(--r-round);background:var(--sheet);animation:dot .5s var(--ease) 2 alternate}
+.dots i:nth-child(2){animation-delay:.12s}
+.dots i:nth-child(3){animation-delay:.24s}
+@keyframes dot{from{opacity:.3}to{opacity:1}}
+.sent .big2{width:84px;height:84px;color:var(--mint-bright)}
+.sent .big2 path,.sent .big2 circle{stroke-dasharray:1;stroke-dashoffset:1;animation:drawin .9s var(--ease) .1s forwards}
+.sent .big2 path{animation-delay:.45s}
+@keyframes drawin{to{stroke-dashoffset:0}}
+.sent h2{margin-top:22px}
+
+/* ---------- act 3: the white calculation card in the left zone ---------- */
+.calcard{position:absolute;z-index:2;top:0;left:20px;bottom:20px;width:calc(56% - 30px);display:flex;flex-direction:column;justify-content:center;padding:36px 40px;border-radius:var(--r-24);background:var(--sheet);box-shadow:var(--shadow-sheet);opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity var(--d-2) var(--ease),transform var(--d-3) var(--ease)}
+.scene.act3 .calcard{opacity:1;transform:none;pointer-events:auto}
+.c-found{margin:0;font-size:var(--fs-28);font-weight:600;line-height:1.2}
+.c-q{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-top:22px;color:var(--ink-2)}
+.c-q output{font-size:var(--fs-28);font-weight:600;color:var(--ink);white-space:nowrap}
+.rng{position:relative;height:44px}
+.rng::before,.rng i{content:"";position:absolute;left:0;right:0;top:19px;height:6px;border-radius:var(--r-pill)}
+.rng::before{background:var(--track)}
+.rng i{background:var(--mint);transform-origin:0 50%;transform:scaleX(var(--p,.5))}
+.rng input{position:relative;display:block;width:100%;height:44px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.rng input::-webkit-slider-runnable-track{height:44px;background:transparent}
+.rng input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:8px;border:4px solid var(--sheet);border-radius:var(--r-round);background:var(--mint)}
+.rng input::-moz-range-track{height:44px;background:transparent}
+.rng input::-moz-range-thumb{width:22px;height:22px;border:4px solid var(--sheet);border-radius:var(--r-round);background:var(--mint)}
+.c-big{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:16px;margin-top:8px}
+.c-big b{font-size:var(--fs-big);font-weight:600;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.c-big span{font-size:var(--fs-28)}
+.c-st{margin:8px 0 0;color:var(--ink-2)}
+.cmp{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px 16px;margin-top:22px;color:var(--ink-2)}
+.cmp .tr{position:relative;height:8px;border-radius:var(--r-pill);background:var(--track);overflow:hidden}
+.cmp .tr i{position:absolute;inset:0;border-radius:var(--r-pill);background:var(--ink-2);transform-origin:0 50%;transform:scaleX(0);transition:transform 1.1s var(--ease) .3s}
+.cmp .tr.me i{background:var(--mint);right:auto;width:10px}
+.cmp.grow .tr i{transform:none}
+
+/* ---------- facts ---------- */
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:32px;text-align:center}
+.fact b{display:block;font-size:var(--fs-28);font-weight:600;letter-spacing:-.01em}
+.fact span{color:var(--ink-2)}
+.fact .bh{display:block;height:14px;width:auto;margin:0 auto 10px;filter:brightness(0);opacity:.7}
+
+/* ---------- the document (foreign paper, its own three sizes) ---------- */
+.doc{position:relative;padding:18px 30px 20px;font-family:var(--font-doc);font-size:var(--fs-doc);line-height:1.4;color:var(--doc-ink);font-variant-numeric:normal}
+.doc [data-k]{position:relative}
+.doc .f{display:inline-block;position:relative}
+.doc .t{margin:8px 0 6px;padding-bottom:5px;border-bottom:2px solid var(--doc-ink);font-size:var(--fs-doc-h);font-weight:700;line-height:1.25}
+.doc .t.c{margin:0 0 4px;padding:0;border:0;text-align:center}
+.doc .bank{display:grid;grid-template-columns:1.45fr 1fr;border:1px solid var(--doc-rule)}
+.doc .bank>div{display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--doc-rule)}
+.doc .bank>div:nth-child(odd){border-right:1px solid var(--doc-rule)}
+.doc .bank>div:nth-last-child(-n+2){border-bottom:0}
+.doc .bank span:first-child,.doc .codes span:first-child{color:var(--doc-mute);white-space:nowrap}
+.doc .top{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+.doc .codes{display:grid;grid-template-columns:auto auto;border:1px solid var(--doc-rule)}
+.doc .codes span{padding:1px 8px;border-bottom:1px solid var(--doc-rule)}
+.doc .codes span:nth-child(even){border-left:1px solid var(--doc-rule);text-align:right}
+.doc .codes span:nth-last-child(-n+2){border-bottom:0}
+.doc .kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;margin:1px 0}
+.doc .kv>span:first-child{color:var(--doc-mute)}
+.doc .basis{margin:4px 0 0}
+.doc table{width:100%;margin-top:10px;border-collapse:collapse}
+.doc th,.doc td{padding:3px 7px;border:1px solid var(--doc-rule);text-align:left;font-weight:400;vertical-align:top}
+.doc th{background:var(--doc-fill);font-weight:700}
+.doc .r{text-align:right;white-space:nowrap}
+.doc .c{text-align:center;white-space:nowrap}
+.doc .tots{display:grid;grid-template-columns:1fr auto;gap:0 20px;margin-top:6px;justify-items:end;font-weight:700}
+.doc .tots>span:nth-child(odd){color:var(--doc-mute);font-weight:400}
+.doc .words{margin:6px 0 0;padding-bottom:4px;border-bottom:1px solid var(--doc-ink)}
+.doc .words b{display:block}
+.doc .note{margin:8px 0 0}
+.doc .place{display:flex;justify-content:space-between;margin-bottom:8px;color:var(--doc-mute)}
+.doc .pre{margin:0 0 2px}
+.doc .cl{margin-top:7px}
+.doc .cl b{display:block}
+.doc .contact{margin:10px 0 0}
+.doc .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:4px;background:var(--doc-rule);border:1px solid var(--doc-rule)}
+.doc .box{padding:4px 9px 5px;background:var(--sheet)}
+.doc .box.w{grid-column:1/-1}
+.doc .box b{display:flex;align-items:baseline;gap:6px;font-weight:400;color:var(--doc-mute)}
+.doc .box b i{font-style:normal;font-size:var(--fs-doc-cap)}
+.doc .foot{display:grid;grid-template-columns:1fr 1fr 84px;gap:24px;align-items:end;margin-top:12px}
+.doc .foot.cu{grid-template-columns:1fr 84px}
+.doc .role{display:block;color:var(--doc-mute)}
+.doc .who{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;min-height:30px;padding-bottom:3px;border-bottom:1px solid var(--doc-mute)}
+.doc .sig{display:block;width:72px;height:22px;color:var(--sig)}
+.doc .stamp{display:grid;place-items:center;width:84px;height:84px;margin-bottom:-10px;border:3px double var(--stamp);border-radius:var(--r-round);color:var(--stamp);font-size:var(--fs-doc-cap);font-weight:700;line-height:1.35;letter-spacing:.06em;text-align:center;opacity:.72;transform:rotate(-14deg)}
+
+/* personal data: a flat bar wipes in over it (clip-path), the text under it fades */
+.pii{position:relative;display:inline-block;vertical-align:bottom}
+.pii .raw{display:inline-block;transition:opacity .2s linear .3s}
+.pii.masked .raw{opacity:0}
+.pii .rd{position:absolute;left:-2px;right:-2px;top:1px;bottom:1px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--r-6);background:var(--redact);clip-path:inset(0 100% 0 0);transition:clip-path .4s var(--ease)}
+.pii .rd em{font-family:var(--font);font-size:var(--fs-doc-cap);font-style:normal;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream);opacity:0;transition:opacity .25s var(--ease) .3s}
+.pii.masked .rd{clip-path:inset(0 0 0 0)}
+.pii.masked .rd em{opacity:.8}
+.scene.orig .pii .rd{clip-path:inset(0 0 0 100%)}
+.scene.orig .pii .raw{opacity:1;transition:none;text-decoration:underline dashed var(--redact);text-underline-offset:3px}
+
+/* the agent's frame: rounded, mint 2 px (non-scaling at any camera zoom), corner ticks, glow as a second wider rect */
+.rf{position:absolute;left:0;top:0;width:720px;height:100%;overflow:visible;pointer-events:none}
+.rf #rr{fill:var(--mint-a14);stroke:var(--mint);stroke-width:2;vector-effect:non-scaling-stroke;opacity:0;transition:opacity .25s var(--ease)}
+.rf #rg{fill:none;stroke:var(--mint-bright);stroke-width:8;vector-effect:non-scaling-stroke;opacity:0;transition:opacity .25s var(--ease)}
+.rf #rc{fill:none;stroke:var(--mint-bright);stroke-width:3;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:0;transition:opacity .25s var(--ease)}
+.rf.on #rr,.rf.on #rc{opacity:1}
+.rf.on #rg{opacity:.22}
+.rf.clay #rr{fill:var(--clay-a14);stroke:var(--clay-deep)}
+.rf.clay #rg,.rf.clay #rc{stroke:var(--clay)}
+.rf.pulse #rg{animation:pulse .7s var(--ease) 1}
+@keyframes pulse{0%{opacity:.22}40%{opacity:.75}100%{opacity:.22}}
+/* found error: peach fill behind the text */
+.doc .hit{z-index:0}
+.doc .hit::before{content:"";position:absolute;inset:-2px -5px;z-index:-1;border-radius:var(--r-6);background:var(--peach);clip-path:inset(0 100% 0 0);transition:clip-path var(--d-2) var(--ease)}
+.doc .hit.on::before{clip-path:inset(0 0 0 0)}
+
+/* ---------- spotlight: a white veil over the sheet with a cut-out along the frame (same SVG, same rAF) ---------- */
+.rf #veil{fill:rgba(255,255,255,.66);opacity:0;transition:opacity .3s var(--ease)}
+.rf.spot #veil{opacity:1}
+
+/* ---------- the second robot: a client mail on the left, the 1C order on the right ---------- */
+.sheet.mailsheet{width:600px;min-height:0}
+.doc.mail{padding:30px 34px 34px;font-size:var(--fs-doc-mail);line-height:1.5}
+.doc.mail .mh{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 10px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--doc-rule)}
+.doc.mail .mh span:nth-child(odd){color:var(--doc-mute)}
+.doc.mail .mh b{font-weight:700}
+.doc.mail p{margin:0 0 10px}
+.doc.mail .li{margin:0 0 4px 0}
+.doc.mail .sig{display:block;width:auto;height:auto;margin:0}
+.doc.mail .k{position:relative;display:inline-block}
+/* ---------- the 1C:Enterprise 8.3 "Taxi" window (UT 11, "Заказ клиента"): a program, not a landing card ----------
+   ★ Arial inside: it is the depicted program, like the sheet; the only mint inside is the agent's focus and the fill flash */
+.onec{--f1:18px;--f1t:22px;--h1:32px;--g1:2px;
+  position:absolute;z-index:5;top:-54px;right:20px;bottom:108px;width:calc(46% - 30px);display:none;flex-direction:column;overflow:visible;
+  border:1px solid #B9B9B9;border-radius:6px;background:#FFF;box-shadow:var(--shadow-sheet);
+  font-family:Arial,Helvetica,sans-serif;font-size:var(--f1);line-height:1.2;color:#333;letter-spacing:0;
+  transition:transform var(--d-3) var(--ease),opacity var(--d-2) var(--ease)}
+.scene.mailmode .onec{display:flex}
+/* ★ the window rises into the empty right part of the step bar; one height in acts 1 and 2 (CLS 0): in act 2 it slides left and down */
+.panel{justify-content:safe center}
+.sbox{container-type:inline-size}
+.scene.mailmode.act2 .onec{transform:translate(calc(10px - 54cqw),54px)}
+.scene.mailmode.act2 .sheet{opacity:0}
+.scene.mailmode.act3 .onec{opacity:0;pointer-events:none}
+.onec i{display:inline-flex;font-style:normal}
+.onec svg{display:block;width:100%;height:100%;fill:currentColor}
+/* 1. system panel */
+.onec .sys{flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 10px 0 8px;border-radius:5px 5px 0 0;background:#FBED9E;border-bottom:1px solid #E5D27A}
+.onec .sys .lg{flex:none;width:auto;height:26px}
+.onec .sys .ic{flex:none;width:20px;height:20px;color:#5C5C5C}
+.onec .sys .db{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:16px;color:#333}
+.onec .sys .si{flex:none;display:flex;gap:12px}
+.onec.noicons .sys .si{display:none}
+/* 2. form title */
+.onec .ft{flex:none;display:flex;align-items:center;gap:6px;height:40px;padding:0 10px}
+.onec .ft .nb{flex:none;width:24px;height:24px;padding:3px;border:1px solid #C4C4C4;border-radius:50%;color:#5C5C5C}
+.onec .ft .fav{flex:none;width:20px;height:20px;margin:0 2px 0 4px;color:#9A9A9A}
+.onec .ft .tt{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:var(--f1t);font-weight:400;color:#333}
+.onec .ft .ic{flex:none;width:20px;height:20px;color:#5C5C5C}
+/* 3. command bar */
+.onec .cb{flex:none;display:flex;align-items:center;gap:6px;padding:2px 10px 6px}
+.onec .bn{display:inline-flex;align-items:center;height:32px;padding:0 10px;border:1px solid #B5B5B5;border-radius:3px;background:#FFF;font-size:16px;font-weight:400;color:#333;white-space:nowrap}
+.onec .bn.def{background:#FFDD2D;border-color:#C9A300;color:#000;font-weight:700}
+.onec .cb .mo{margin-left:auto;font-size:16px;color:#333;white-space:nowrap}
+/* 4. fields: label with a colon on the left, an input on the right */
+.onec .fs{flex:none;display:flex;flex-direction:column;gap:var(--g1);padding:4px 10px 0}
+.onec .fr{display:flex;align-items:center;gap:10px}
+.onec .fr .k{flex:none;width:9.2em;color:#333;white-space:nowrap}
+.onec .in{position:relative;flex:1;min-width:0;display:flex;align-items:center;height:var(--h1);border:1px solid #A8A8A8;border-radius:2px;background:#FFF}
+.onec .in .v{flex:1;min-width:0;height:100%;display:flex;align-items:center;padding:0 6px;overflow:hidden;white-space:nowrap;color:#000}
+.onec .in .bt{flex:none;width:24px;height:100%;padding:0 5px;border-left:1px solid #D6D6D6;color:#5C5C5C}
+.onec .in.date .bt{width:28px;padding:0 6px}
+/* empty required field: the red dashed underline of 1C */
+.onec .in::before{content:"";position:absolute;left:5px;right:56px;bottom:5px;border-bottom:1px dashed #E0202A}
+.onec .fr.got .in::before{display:none}
+/* fill flash: a 2px outline for 0.4 s, then the usual border */
+.onec .in::after{content:"";position:absolute;inset:-2px;border:2px solid var(--mint);border-radius:3px;opacity:0;pointer-events:none}
+.onec .fr.flash .in::after{animation:fl1c .4s linear both}
+@keyframes fl1c{0%,75%{opacity:1}to{opacity:0}}
+.onec .fr.focus .in::after{opacity:1}
+.onec .lock{flex:none;display:inline-block;width:18px;height:18px;margin-right:6px;color:#5C5C5C}
+/* 5. tabs and the table part */
+.onec .tabs{display:flex;gap:18px;margin-top:4px;padding:0 2px;border-bottom:1px solid #D0D0D0;font-size:16px;color:#555}
+.onec .tabs span{padding:4px 0 5px}
+.onec .tabs .on{color:#333;font-weight:700;box-shadow:inset 0 -2px 0 #333}
+.onec.notabs .tabs{display:none}
+.onec .tb{width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #D0D0D0}
+.onec .tb th{height:26px;padding:0 6px;background:#F2F2F2;border:1px solid #D0D0D0;font-size:16px;font-weight:400;color:#555;text-align:left}
+.onec .tb th:nth-child(1){width:2.2em}
+.onec .tb th:nth-child(3){width:6.2em;text-align:right}
+.onec .tb th:nth-child(4){width:76px}
+.onec .tb td{height:28px;padding:0 6px;border:1px solid #D0D0D0;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.onec .tb td:nth-child(3){text-align:right}
+.onec .tb tr.new td{background:#FFF6C2}
+/* 6. the 1C notification after posting */
+/* ★ the notification sits under the fields in the bottom right corner (8 px below "Подразделение"), never over a filled field;
+   when the window is short (1366×650) it hangs below the window edge onto the stage, like a popup in the screen corner */
+.onec .ntf{position:relative;flex:none;align-self:flex-end;margin:8px 12px 8px;display:flex;flex-direction:column;gap:2px;padding:8px 14px;border:1px solid #E3C94B;border-radius:3px;background:#FFFCE6;font-size:16px;color:#333;opacity:0;transform:translateY(12px);transition:opacity var(--d-2) var(--ease),transform var(--d-2) var(--ease)}
+.onec .ntf b{font-weight:700}
+.onec .ntf span{white-space:nowrap}
+.onec .ntf .nw{display:inline}
+.onec .ntf.on{opacity:1;transform:none}
+/* phone only: the 1C strip under the mail: a narrow system bar with the mark and the document, one 1C field below */
+.cur{display:none;flex-direction:column;margin:16px 4px 0;overflow:hidden;border:1px solid #B9B9B9;border-radius:6px;background:#FFF;font-family:Arial,Helvetica,sans-serif;color:#333;font-size:18px}
+.cur .sy{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;background:#FBED9E;font-size:16px}
+.cur .sy .lg{width:auto;height:20px}
+.cur .fr{display:flex;align-items:center;gap:8px;padding:8px}
+.cur .k{flex:none;white-space:nowrap}
+.cur .in{position:relative;flex:1;min-width:0;display:flex;align-items:center;height:34px;border:1px solid #A8A8A8;border-radius:2px}
+.cur .in .v{flex:1;min-width:0;display:flex;align-items:center;padding:0 6px;overflow:hidden;white-space:nowrap;color:#000}
+.cur .in .bt{flex:none;display:inline-flex;width:24px;height:100%;padding:0 5px;border-left:1px solid #D6D6D6;color:#5C5C5C}
+.cur svg{display:block;width:100%;height:100%;fill:currentColor}
+.cur .lock{flex:none;width:18px;height:18px;margin-right:6px;color:#5C5C5C}
+.cur .in::before{content:"";position:absolute;left:5px;right:56px;bottom:6px;border-bottom:1px dashed #E0202A}
+.cur .fr.got .in::before{display:none}
+.cur .in::after{content:"";position:absolute;inset:-2px;border:2px solid var(--mint);border-radius:3px;opacity:0;pointer-events:none}
+.cur .fr.flash .in::after{animation:fl1c .4s linear both}
+/* flying values: a copy leaves the mail along a light arc and lands in its 1C field */
+.flies{position:fixed;left:0;top:0;z-index:60;pointer-events:none}
+.fly{position:absolute;left:0;top:0;display:inline-flex;align-items:center;height:38px;padding:0 16px;border:2px solid var(--mint-bright);border-radius:var(--r-pill);background:var(--sheet);color:var(--ink);font-size:var(--fs-18);font-weight:600;white-space:nowrap;will-change:transform,opacity}
+
+/* ---------- entrance ---------- */
+.intro .head .ln{animation:rise var(--d-3) var(--ease) backwards}
+.intro .head .ln+.ln{animation-delay:.08s}
+.intro .fold{animation:rise var(--d-3) var(--ease) backwards}
+.intro .fold:nth-child(2){animation-delay:.06s}
+.intro .fold:nth-child(3){animation-delay:.12s}
+.intro .fold:nth-child(4){animation-delay:.18s}
+.intro .scene{animation:rise var(--d-3) var(--ease) .2s backwards}
+
+/* ---------- widths and heights ---------- */
+@media (max-width:1099px){.steps .w{display:none} .steps .on .w{display:inline}}
+@media (min-width:900px) and (max-height:759px){
+  .head{margin:8px auto 6px;font-size:var(--fs-h1-line);white-space:nowrap}
+  .head .ln{display:inline}
+  .fold{height:48px}
+  .folders{min-height:48px}
+  .fold .front{height:34px}
+  .fold[aria-selected="true"] .front{height:38px}
+  .sbar{height:54px}
+  .panel{padding:24px 30px}
+  .calcard{padding:26px 32px}
+  .panel .why,.panel .cap{margin-top:12px}
+  .panel .note{margin-top:10px;padding:10px 14px}
+  .cta,.btn{margin-top:16px}
+  /* the 1C window on a laptop: text 16 px, tighter rows */
+  .onec{--f1:16px;--f1t:18px;--h1:28px;--g1:2px;top:-48px}
+  .onec .sys{height:32px}
+  .onec .sys .lg{height:22px}
+  .onec .ft{height:34px}
+  .onec .ft .nb{width:22px;height:22px}
+  .onec .bn{height:28px}
+  .onec .cb{padding:2px 10px 4px}
+  .onec .fs{padding:2px 10px 4px}
+  .onec .tb th{height:24px}
+  .onec .tb td{height:26px}
+  .scene.mailmode.act2 .onec{transform:translate(calc(10px - 54cqw),48px)}
+  /* the mail verdict on a laptop: number, three lines, notification and button fit without scrolling */
+  .scene.mailmode .panel.tight{padding-top:18px;padding-bottom:18px}
+  .scene.mailmode .panel.tight .big{font-size:80px}
+  .scene.mailmode .panel.tight .cap{margin-top:8px}
+  .scene.mailmode .panel.tight .note{margin-top:8px}
+  .scene.mailmode .panel.tight .cta{margin-top:12px}
+}
+
+/* ---------- phone: same scenario, the camera window on top, the panel below ---------- */
+@media (max-width:899px){
+  :root{--gut:16px}
+  .hdr{height:52px}
+  .brand img{height:15px}
+  .btn-hdr{height:38px;padding:0 14px}
+  .head{margin:20px -8px 16px;letter-spacing:-.035em;text-wrap:balance}
+  .head .ln{display:inline}
+  .plate{margin:0 calc(-1 * var(--gut))}
+  .folders{display:flex;gap:8px;padding:0 4px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .folders::-webkit-scrollbar{display:none}
+  .fold{flex:none;width:200px;scroll-snap-align:start}
+  .scene{height:auto;margin:0 4px;overflow:visible}
+  /* the mail on the phone: mail on top, the 1C card in the flow below it; in the result the 1C card stays */
+  .onec,.scene.mailmode .onec{position:relative;top:auto;right:auto;bottom:auto;margin:12px 8px 0}
+  .tools{flex-wrap:wrap;justify-content:center}
+  .scene:not(.act2) .tools{display:none}
+  .scene.mailmode.act2 .onec{transform:none}
+  .scene.mailmode.act2 .cam{display:none}
+  .scene.mailmode.act3 .onec{display:none}
+  .sbar{height:auto;flex-wrap:wrap;justify-content:center;gap:10px;padding:12px 10px}
+  .steps button{padding:0 12px 0 6px}
+  .sbox{flex:none}
+  .cam{position:relative;inset:auto;height:46vh;margin:0 8px;border-radius:var(--r-16)}
+  .scene.act2 .cam{height:32vh}
+  .cam::after{display:none}
+  .scene.act3 .cam{display:none}
+  /* subtitle: 18 px, at most two lines; "Пропустить" is a text button under the capsule, on the right */
+  .sub{position:relative;left:auto;right:auto;bottom:auto;width:auto;margin:12px 8px 50px;min-height:56px;padding:10px 18px;border-radius:var(--r-24);font-size:var(--fs-18);line-height:1.3}
+  .sub #subT,.sub .ghost{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .sub .skip{position:absolute;right:2px;top:100%;margin-top:4px;height:40px;padding:0 8px;background:none;color:var(--ink-2);font-size:var(--fs-18);font-weight:600}
+  /* the mail: the current 1C field under the mail during the run; the full 1C card only in the result */
+  .scene.mailmode:not(.act2):not(.act3) .onec{display:none}
+  .scene.mailmode:not(.act2):not(.act3) .cur{display:flex}
+  /* the full 1C window in the result: laid out at 460 px, zoomed to the width by the script */
+  .scene.mailmode .onec{width:460px;margin:12px 4px 0;box-shadow:none}
+  /* the notification takes its place under the fields (reserved, no shift), so nothing is covered */
+  .onec .ntf{align-self:stretch;margin:2px 10px 10px}
+  .onec .ft .nb,.onec .ft .fav{display:none}
+  .scene.act2 .sub,.scene.act3 .sub{display:none}
+  .panel{position:relative;top:auto;right:auto;bottom:auto;width:auto;margin:12px 8px 8px;padding:24px 20px;display:none}
+  .scene.act2 .panel,.scene.act3 .panel{display:flex}
+  .scene.act2 .panel{padding-bottom:92px}
+  .scene.act2 .panel .cta{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:30;width:auto;margin:0}
+  .calcard{position:relative;top:auto;left:auto;bottom:auto;width:auto;margin:0 8px;padding:24px 20px;display:none}
+  .scene.act3 .calcard{display:flex}
+  .facts{grid-template-columns:1fr;gap:18px}
+}
+
+/* reduced motion and ?static=1: final states */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+.static *,.static *::before,.static *::after{transition:none!important;animation:none!important}

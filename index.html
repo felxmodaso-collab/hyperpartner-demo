@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Цифровой сотрудник находит ошибки в документах — HyperPartner</title>
+<meta name="description" content="Цифровой сотрудник находит ошибки в документах до оплаты: счета, накладные, договоры, декларации. Персональные данные закрываются до чтения.">
+<meta property="og:title" content="Цифровой сотрудник находит ошибки в документах — HyperPartner">
+<meta property="og:description" content="Счета, накладные, договоры, декларации. Персональные данные закрываются до чтения.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#16302B">
+<link rel="icon" type="image/png" href="favicon.png">
+<script>
+(function () {
+  /* entrance class before the first paint, so nothing flashes before the script runs */
+  if (!location.search && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('intro');
+  /* preload of the two font files; skipped on file:// where a CORS preload is always refused (local preview only) */
+  if (location.protocol === 'file:') return;
+  ['fonts/plexsans-400-cyrillic.woff2', 'fonts/plexsans-600-cyrillic.woff2'].forEach(function (h) {
+    var l = document.createElement('link');
+    l.rel = 'preload'; l.as = 'font'; l.type = 'font/woff2'; l.href = h; l.crossOrigin = 'anonymous';
+    document.head.appendChild(l);
+  });
+})();
+</script>
+<link rel="stylesheet" href="plex.css">
+<link rel="stylesheet" href="module.css">
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-in">
+    <a class="brand" href="https://hyperpartner.ru/"><img src="logo/hyperpartner-logo-on-dark.svg" alt="HyperPartner" width="2481" height="199"></a>
+    <a class="btn-hdr" href="#scene" data-go="3">Получить расчёт</a>
+  </div>
+</header>
+
+<main class="frame">
+  <h1 class="head"><span class="ln">Цифровой сотрудник находит ошибки</span> <span class="ln">в документах <em>до оплаты</em></span></h1>
+
+  <div class="plate">
+    <div class="folders" id="folders" role="tablist" aria-label="Документ"></div>
+
+    <!-- the scene: one rounded stage; the sheet lives in a camera window; a forest panel joins in acts 2-3 -->
+    <section class="scene" id="scene" aria-label="Демо">
+      <div class="sbar">
+        <ol class="steps" id="steps">
+          <li data-s="1"><button type="button"><span class="n">1</span><span class="w">Чтение</span></button></li>
+          <li data-s="2"><button type="button"><span class="n">2</span><span class="w">Проверка</span></button></li>
+          <li data-s="3"><button type="button"><span class="n">3</span><span class="w">Расчёт</span></button></li>
+        </ol>
+        <div class="tools" id="tools">
+        <button type="button" class="whole" id="whole">Весь документ</button>
+        <div class="seg" id="seg" role="group" aria-label="Вид документа">
+          <i class="thumb" id="thumb"></i>
+          <button type="button" data-v="agent" aria-pressed="true">Что видит агент</button>
+          <button type="button" data-v="orig" aria-pressed="false">Оригинал</button>
+        </div>
+        </div>
+      </div>
+      <div class="sbox" id="box">
+        <div class="cam" id="cam">
+          <div class="sheet" id="sheet"><div class="doc" id="doc"></div>
+            <svg class="rf" id="rf" aria-hidden="true"><path id="veil" fill-rule="evenodd"></path><rect id="rg" rx="10" ry="10"></rect><rect id="rr" rx="7" ry="7"></rect><path id="rc"></path></svg>
+          </div>
+        </div>
+        <div class="cur" id="cur" aria-hidden="true"></div>
+        <div class="sub" id="sub" role="status" aria-live="polite"><i class="dot"></i><span class="st"><span id="subT"></span></span><button type="button" class="skip" id="skip">Пропустить</button></div>
+        <div class="onec" id="onec"></div>
+        <div class="calcard" id="calcard"></div>
+        <aside class="panel" id="panel"></aside>
+      </div>
+    </section>
+  </div>
+
+  <div class="facts">
+    <div class="fact"><img class="bh" src="logo/borishof-cream.png" alt="БорисХоф" width="654" height="60"><b>1,2 млн часов</b><span>на цифровых сотрудниках</span></div>
+    <div class="fact"><b>от 15 000 ₽/мес</b><span>подписка</span></div>
+    <div class="fact"><b>1–6 месяцев</b><span>окупаемость</span></div>
+  </div>
+</main>
+
+<div class="flies" id="flies" aria-hidden="true"></div>
+<script src="data.js"></script>
+<script src="module.js"></script>
+</body>
+</html>
