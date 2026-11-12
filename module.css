@@ -65,10 +65,12 @@ i,em{font-style:normal}
   background:radial-gradient(95% 85% at 84% 4%,#f3e3d3 0%,rgba(243,227,211,0) 55%),radial-gradient(85% 85% at 4% 98%,#e9e2d6 0%,rgba(233,226,214,0) 60%),linear-gradient(135deg,#f1ede5,#ebe4d9)}
 /* the race: the person over the document, the robot over its work; each lane — who, what he does now, the clock, the track */
 .race{display:grid;grid-template-columns:minmax(0,56fr) minmax(0,44fr);gap:0 24px;margin-bottom:16px}
-.lane{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) auto;column-gap:10px;row-gap:4px;align-items:center}
-.lane .av{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-round);background:rgba(30,29,26,.09);color:var(--ink)}
-.lane .av svg{width:18px;height:18px}
-.lane.bot .av{background:var(--forest);color:var(--mint-bright)}
+.lane{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr) auto;column-gap:10px;row-gap:4px;align-items:center}
+.lane .av{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--r-round);background:rgba(30,29,26,.09);color:var(--ink)}
+.lane .av svg{width:21px;height:21px}
+/* the digital employee carries the mark of HyperPartner from the brand book */
+.lane .av img{display:block;width:19px;height:auto;margin-left:1px}
+.lane.bot .av{background:var(--forest)}
 .lane .who{display:contents}
 .lane .av{grid-area:1/1}
 .lane .who b{grid-area:1/2;font-weight:600}
@@ -84,7 +86,7 @@ i,em{font-style:normal}
 .lane.hum .tr i{background:rgba(30,29,26,.6)}
 .lane.bot .tr i{background:linear-gradient(90deg,var(--mint-bright),var(--mint-deep))}
 /* one quiet control: run the comparison again */
-.lane.bot{grid-template-columns:30px minmax(0,1fr) auto auto}
+.lane.bot{grid-template-columns:36px minmax(0,1fr) auto auto}
 .again{grid-area:1/4;display:inline-flex;align-items:center;gap:6px;height:32px;margin-left:6px;padding:0 12px 0 9px;border:1px solid var(--line);border-radius:var(--r-pill);background:rgba(255,255,255,.7);transition:background .25s var(--ease),opacity .3s var(--ease)}
 .again:hover{background:#fff}
 .again svg{width:18px;height:18px}
@@ -328,7 +330,7 @@ i,em{font-style:normal}
   .lane.hum .who b{grid-area:1/2/2/-1}
   .lane .tr{grid-area:3/1/4/3;align-self:center;margin-top:0}
   .lane .tm{grid-area:3/3;padding-left:4px}
-  .lane.bot{grid-template-columns:30px minmax(0,1fr) auto}
+  .lane.bot{grid-template-columns:36px minmax(0,1fr) auto}
   .again{grid-area:1/3;justify-self:end;justify-content:center;width:36px;height:36px;margin-left:0;padding:0}
   .again span{display:none}
   /* the path in one row: the step that is on shows its name, the others — their numbers; the height is kept for two lines */
