@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>Цифровой сотрудник находит ошибки в документах — HyperPartner</title>
-<meta name="description" content="Цифровой сотрудник находит ошибки в документах до оплаты: счета, накладные, договоры, декларации. Персональные данные закрываются до чтения.">
-<meta property="og:title" content="Цифровой сотрудник находит ошибки в документах — HyperPartner">
-<meta property="og:description" content="Счета, накладные, договоры, декларации. Персональные данные закрываются до чтения.">
+<title>Человек против цифрового сотрудника — HyperPartner</title>
+<meta name="description" content="Интерактивное сравнение: специалист и цифровой сотрудник одновременно проверяют один документ. До передачи цифровому сотруднику проходит деперсонализация данных.">
+<meta property="og:title" content="Человек против цифрового сотрудника — HyperPartner">
+<meta property="og:description" content="Счёт на оплату, заказ из письма в 1С, акт сверки, договор поставки, сертификат соответствия. До передачи цифровому сотруднику проходит деперсонализация данных.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#16302B">
 <link rel="icon" type="image/png" href="favicon.png">
@@ -25,6 +25,8 @@
 })();
 </script>
 <link rel="stylesheet" href="plex.css">
+<link rel="stylesheet" href="onec.css">
+<link rel="stylesheet" href="forms.css">
 <link rel="stylesheet" href="module.css">
 </head>
 <body>
@@ -32,74 +34,112 @@
 <header class="hdr">
   <div class="hdr-in">
     <a class="brand" href="https://hyperpartner.ru/"><img src="logo/hyperpartner-logo-on-dark.svg" alt="HyperPartner" width="2481" height="199"></a>
-    <a class="btn-hdr" href="#scene" data-go="3">Получить расчёт</a>
+    <a class="btn-hdr" href="#lead" data-lead><span class="l">Получить сводку по&nbsp;ИНН</span><span class="s">Сводка по&nbsp;ИНН</span></a>
   </div>
 </header>
 
-<main class="frame">
-  <h1 class="head"><span class="ln">Цифровой сотрудник находит ошибки</span> <span class="ln">в документах <em>до оплаты</em></span></h1>
+<main class="wrap">
+  <div class="hero">
+    <p class="eyb"><span>Сравнение в&nbsp;реальном времени</span></p>
+    <h1><span class="ln">Человек против цифрового сотрудника:</span> <span class="ln"><em>кто быстрее справится с&nbsp;документом?</em></span></h1>
+    <p class="sub">Выберите отдел и&nbsp;документ. Перед передачей цифровому сотруднику проходит деперсонализация данных.</p>
+  </div>
 
-  <div class="plate">
-    <div class="folders" id="folders" role="tablist" aria-label="Документ"></div>
+  <div class="demo">
+    <!-- a department and its document: one control, the chosen plate slides -->
+    <div class="seg-wrap"><div class="seg" id="tabs" role="tablist" aria-label="Отдел и документ"></div></div>
 
-    <!-- the scene: one rounded stage; the sheet lives in a camera window; a forest panel joins in acts 2-3 -->
-    <section class="scene" id="scene" aria-label="Демо">
-      <i class="shade" id="shade" aria-hidden="true"></i>
-      <div class="sbar">
-        <ol class="steps" id="steps">
-          <li data-s="1"><button type="button"><span class="n">1</span><span class="w">Вручную</span></button></li>
-          <li data-s="2"><button type="button"><span class="n">2</span><span class="w">Защита данных</span></button></li>
-          <li data-s="3"><button type="button"><span class="n">3</span><span class="w">Проверка</span></button></li>
-          <li data-s="4"><button type="button"><span class="n">4</span><span class="w">Расчёт</span></button></li>
-        </ol>
-        <!-- v10: the board of the two actors — each has its own place, colour, sign and name; the filled place is the one working -->
-        <div class="board" id="board">
-          <button type="button" class="pl hum" id="plH"><i class="av"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4" fill="currentColor"/><path d="M4.5 20.5c.8-4 3.9-6.3 7.5-6.3s6.7 2.3 7.5 6.3" fill="currentColor"/></svg></i><span class="nm" id="hN">Сотрудник</span><span class="stt" id="hS"></span><b class="tm" id="hT">0:00</b><i class="acc">ускорено</i><i class="bar"><i id="hB"></i></i></button>
-          <span class="res" id="resB" aria-live="polite"></span>
-          <button type="button" class="pl bot" id="plB"><i class="av"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6l6 6-6 6M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="nm">Робот</span><b class="tm" id="bT"></b></button>
-          <button type="button" class="skip2" id="skip2">Пропустить</button>
+    <!-- the scene: one pedestal; the race on top, the path of the document under it, the document on the left, the robot's work on the right — every place is fixed -->
+    <section class="scene" id="scene" aria-label="Сравнение" data-phase="idle">
+      <div class="race" id="race">
+        <div class="lane hum" id="laneH">
+          <i class="av"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4" fill="currentColor"/><path d="M4.5 20.5c.8-4 3.9-6.3 7.5-6.3s6.7 2.3 7.5 6.3" fill="currentColor"/></svg></i>
+          <p class="who"><b id="hN">Бухгалтер</b><span id="hS"></span></p>
+          <b class="tm" id="hT"></b>
+          <i class="tr"><i id="hB"></i></i>
         </div>
-        <div class="tools" id="tools">
-        <button type="button" class="whole" id="whole">Весь документ</button>
-        <div class="seg" id="seg" role="group" aria-label="Вид документа">
-          <i class="thumb" id="thumb"></i>
-          <button type="button" data-v="agent" aria-pressed="true">Что видит робот</button>
-          <button type="button" data-v="orig" aria-pressed="false">Оригинал</button>
-        </div>
+        <div class="lane bot" id="laneB">
+          <i class="av"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6l6 6-6 6M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          <p class="who"><b>Цифровой сотрудник</b><span id="bS" aria-live="polite"></span></p>
+          <b class="tm" id="bT"></b>
+          <i class="tr"><i id="bB"></i></i>
+          <button type="button" class="again" id="again" aria-label="Повторить разбор"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 10a5.5 5.5 0 1 1-1.7-4M14.2 3v3.2H11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Повторить</span></button>
         </div>
       </div>
-      <div class="sbox" id="box">
-        <div class="cam" id="cam">
-          <div class="sheet" id="sheet"><div class="doc" id="doc"></div>
-            <svg class="rf" id="rf" aria-hidden="true"><path id="veil" fill-rule="evenodd"></path><rect id="rg" rx="10" ry="10"></rect><rect id="rr" rx="7" ry="7"></rect><path id="rc"></path></svg><span class="rtag" id="rtag">Робот</span><div class="loupe" id="loupe" aria-hidden="true"></div>
+
+      <!-- the path of the document: it arrives, its personal data are depersonalised, and only then the digital employee gets it -->
+      <ol class="flow" id="flow" aria-label="Путь документа">
+        <li data-s="1"><i></i><span>Входящий документ</span></li>
+        <li data-s="2"><i></i><span>Деперсонализация данных</span></li>
+        <li data-s="3"><i></i><span>Цифровой сотрудник</span></li>
+      </ol>
+
+      <div class="stage" id="stage">
+        <div class="col-doc" id="colDoc">
+          <div class="sheet-scroll" id="sheetScroll">
+            <div class="sheetbox" id="sheetBox">
+              <div class="sheet" id="sheet">
+                <div class="doc" id="doc"></div>
+                <i class="beam" id="beam" aria-hidden="true"></i>
+              </div>
+            </div>
           </div>
         </div>
-        <!-- v10: the narrator — one large line under the source -->
-        <p class="nar" id="nar" aria-live="polite"></p>
-        <div class="tool" id="tool" aria-hidden="true"></div>
-        <div class="gate" id="gate" role="status"></div>
-        <div class="ckcur" id="ckcur" aria-live="polite"></div>
-        <div class="cur" id="cur" aria-hidden="true"></div>
-        <div class="sub" id="sub" role="status" aria-live="polite"><i class="dot"></i><span class="st"><span id="subT"></span></span><span class="sw" id="sw"></span><button type="button" class="skip" id="skip">Пропустить</button></div>
-        <div class="onec" id="onec"></div>
-        <div class="calcard" id="calcard"></div>
-        <aside class="checks" id="checks" aria-live="polite"></aside>
-        <aside class="panel" id="panel"></aside>
-        <!-- stage 1: the employee's mouse pointer (arrow / I-beam), moved by transform only -->
-        <div class="cur1" id="cur1" aria-hidden="true"><svg class="ar" viewBox="0 0 20 28"><path d="M1.5 1.5v21.2l5.2-5 3.6 8.3 3.4-1.5-3.6-8.1h7.3z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/></svg><svg class="ib" viewBox="0 0 12 24"><path d="M2 2h3l1 1 1-1h3M6 3v18M2 22h3l1-1 1 1h3" fill="none" stroke="#fff" stroke-width="3.2"/><path d="M2 2h3l1 1 1-1h3M6 3v18M2 22h3l1-1 1 1h3" fill="none" stroke="#000" stroke-width="1.3"/></svg><span class="ctag" id="ctag">Сотрудник</span></div>
+        <!-- the robot's work: one forest card for every document — the checks, the 1C order for the mail, the result -->
+        <aside class="engine" id="engine">
+          <p class="e-acc" id="eAcc"></p>
+          <p class="sr" id="eSt" aria-live="polite"></p>
+          <div class="e-wait" aria-hidden="true"><b>Ждёт документ</b><span>Идёт деперсонализация данных. Цифровой сотрудник получит документ только после&nbsp;неё.</span></div>
+          <ul class="log" id="log"></ul>
+          <div class="onec-box" id="onecBox"><div class="onec" id="onec"></div></div>
+          <div class="res" id="res"></div>
+        </aside>
       </div>
     </section>
   </div>
 
-  <div class="facts">
-    <div class="fact"><img class="bh" src="logo/borishof-cream.png" alt="БорисХоф" width="654" height="60"><b>1,2 млн часов</b><span>на цифровых сотрудниках</span></div>
-    <div class="fact"><b>от 15 000 ₽/мес</b><span>подписка</span></div>
-    <div class="fact"><b>1–6 месяцев</b><span>окупаемость</span></div>
-  </div>
+  <!-- one wide forest card: what the analyst does with an INN on the left, the form on the right -->
+  <section class="lead" id="lead" data-state="ask">
+    <div class="lead-card">
+      <div class="lead-l">
+        <p class="p-eyb">Что автоматизировать в&nbsp;вашей компании</p>
+        <h2>Сводка по&nbsp;вашей компании: нужен только ИНН</h2>
+        <!-- the summary as a sheet of glass: its three parts are the three steps of the analyst -->
+        <div class="sum">
+          <p class="sum-h"><span>Сводка по&nbsp;компании</span><i class="sum-g" aria-hidden="true"><i></i><i></i><i></i><i></i></i></p>
+          <ol class="pipe">
+            <li><b>Профиль по&nbsp;ИНН</b><span>Из&nbsp;открытых реестров: виды деятельности, выручка, численность.</span></li>
+            <li><b>Типовые узкие места</b><span>Сопоставляем профиль с&nbsp;узкими местами отрасли: первичные документы, заказы в&nbsp;1С, договоры, ВЭД.</span></li>
+            <li><b>Сводка на&nbsp;почту</b><span>Документ: какие процессы у&nbsp;вас стоит автоматизировать в&nbsp;первую очередь.</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="lead-r">
+        <form class="lf" id="leadForm" novalidate>
+          <label class="fl" for="inn"><span>ИНН вашей компании</span>
+            <span class="inn-box"><input class="inp" id="inn" name="inn" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="10 цифр" enterkeyhint="next" aria-describedby="innE"><i class="inn-b off" id="innB" aria-live="polite"></i></span>
+          </label>
+          <p class="etx" id="innE"></p>
+          <label class="fl" for="mail"><span>Рабочая почта — на&nbsp;неё придёт сводка</span>
+            <input class="inp" id="mail" name="email" type="email" placeholder="name@company.ru" inputmode="email" autocomplete="email" enterkeyhint="send">
+          </label>
+          <p class="etx" id="mailE"></p>
+          <label class="chk" for="agree"><input type="checkbox" id="agree"><span>Согласен на&nbsp;обработку <a id="pol" href="#" target="_blank" rel="noopener">персональных данных</a></span></label>
+          <p class="etx" id="agreeE"></p>
+          <p class="etx" id="sendE" role="alert"></p>
+          <button class="btn" type="submit"><span>Получить сводку →</span></button>
+          <p class="safe"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l6 2.2v4.6c0 3.9-2.5 6.9-6 8.2-3.5-1.3-6-4.3-6-8.2V4.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.3 10.2l1.9 1.9 3.6-3.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Берём данные только из&nbsp;открытых реестров. Рассылок не&nbsp;будет.</span></p>
+        </form>
+        <div class="mon" id="mon" role="status"></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div class="flies" id="flies" aria-hidden="true"></div>
 <script src="data.js"></script>
+<script src="onec.js"></script>
+<script src="forms.js"></script>
 <script src="module.js"></script>
 </body>
 </html>

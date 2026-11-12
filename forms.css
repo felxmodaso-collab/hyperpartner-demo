@@ -1,0 +1,115 @@
+/* Paper forms: «Счёт на оплату», «Акт сверки», a supply contract, «Сертификат соответствия».
+   Foreign paper: Arial (Times for the contract), black rules — a printout, not a part of the page around it.
+   The sheet is 640 px wide and its body type is 14 px, so at the size of the scene it stays readable.
+   Colours of the paper come from variables, so the whole sheet can step back and a checked place come forward (see module.css). */
+.doc{--ink:#23221F;--mute:#66635C;--rule:#8E8B85;--fill:#F1F0EC;--doc-ink:var(--ink);--doc-mute:var(--mute);--doc-rule:var(--rule);
+  position:relative;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.38;color:var(--ink);font-variant-numeric:normal;letter-spacing:0;transition:color .45s cubic-bezier(.22,1,.36,1)}
+.doc table{border-collapse:collapse}
+.doc th,.doc td,.doc .fi-bank,.doc .fa-tb{border-color:var(--rule);transition:border-color .45s cubic-bezier(.22,1,.36,1)}
+.doc small{color:var(--mute)}
+.doc p,.doc h2,.doc h3{margin:0}
+/* a signature takes the width a mask with its word needs */
+.doc .sig{display:inline-block;width:112px;height:26px;color:#2B3F8F;vertical-align:middle}
+.doc .stamp{display:grid;place-items:center;width:84px;height:84px;border:3px double #3A55A6;border-radius:50%;color:#3A55A6;font-size:10px;font-weight:700;line-height:1.3;letter-spacing:.06em;text-align:center;opacity:.7;transform:rotate(-12deg)}
+.doc .ln{display:flex;align-items:center;gap:8px;min-height:30px;padding-bottom:2px;border-bottom:1px solid var(--ink)}
+
+/* ---------- «Счёт на оплату» ---------- */
+.fi{padding:22px 26px 18px}
+.fi-bank{width:100%;border:1px solid var(--rule);font-size:13px}
+.fi-bank td{padding:2px 7px;border:1px solid var(--rule);vertical-align:top}
+.fi-bank .bn span{display:block}
+.fi-bank .bn small{display:block;font-size:12px}
+.fi-bank .lb{width:54px;white-space:nowrap}
+.fi-bank .vl{width:186px}
+.fi-t{margin:16px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--ink);font-size:18px;font-weight:700;line-height:1.2}
+.fi-kv{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;margin:5px 0}
+.fi-kv>span{color:var(--mute)}
+.fi-kv b{font-weight:700}
+.fi-tb{width:100%;margin-top:10px;border:2px solid var(--ink)}
+.fi-tb th,.fi-tb td{padding:3px 6px;border:1px solid var(--rule);font-weight:400;text-align:left;vertical-align:top}
+.fi-tb th{font-weight:700;text-align:center}
+.fi .r{text-align:right;white-space:nowrap}
+.fi .c{text-align:center;white-space:nowrap}
+.fi-tot{display:grid;grid-template-columns:1fr 118px;gap:1px 0;margin-top:6px;justify-items:end;font-weight:700}
+.fi-w{margin-top:6px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+.fi-w b{display:block}
+.fi-sg{display:grid;grid-template-columns:1fr 1fr 84px;gap:16px;align-items:end;margin-top:12px}
+.fi-sg>div:not(.stamp){display:grid;gap:2px;font-weight:700}
+.fi-sg .ln{font-weight:400}
+.fi-m{margin-top:10px;color:var(--mute)}
+
+/* ---------- «Акт сверки» ---------- */
+.fa{padding:22px 24px 18px;font-size:13.5px}
+.fa h2{font-size:18px;font-weight:700;text-align:center}
+.fa-h{margin-top:2px;text-align:center}
+.fa-p{margin-top:10px;text-align:left}
+.fa-p i{font-style:normal}
+.fa-tb{width:100%;margin-top:10px;border:1.5px solid var(--ink);table-layout:fixed}
+.fa-tb th,.fa-tb td{padding:3px 5px;border:1px solid var(--rule);font-weight:400;vertical-align:top;overflow-wrap:anywhere}
+.fa-tb th{font-weight:700;text-align:center;font-size:12.5px}
+.fa-tb td.c{white-space:nowrap}
+.fa-tb td.r{text-align:right;white-space:nowrap}
+.fa-tb tr.b td{font-weight:700}
+/* the widths of the columns; our half is empty until we fill it, so it is the narrow one */
+.fa-tb col.c1{width:78px}
+.fa-tb col.c3{width:88px}
+.fa-tb col.o1{width:38px}.fa-tb col.o2{width:66px}.fa-tb col.o3{width:46px}.fa-tb col.o4{width:50px}
+.fa-tb th.our{font-size:12px;font-weight:400;color:var(--mute);overflow-wrap:normal;padding-left:2px;padding-right:2px}
+.fa-tb tr:first-child th.our{font-size:12px;font-weight:700}
+.fa-sg{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:14px}
+.fa-sg>div{display:grid;gap:2px}
+.fa-sg .ln{margin-top:4px}
+
+/* ---------- a supply contract ---------- */
+.fc{padding:24px 30px 20px;font-family:"Times New Roman",Times,serif;font-size:16px;line-height:1.36}
+.fc-dr{position:absolute;right:30px;top:20px;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.fc h2{margin-top:16px;font-size:18px;font-weight:700;text-align:center}
+.fc-pl{display:flex;justify-content:space-between;margin:6px 0 8px}
+.fc-pre{text-indent:22px}
+.fc h3{margin:8px 0 3px;font-size:16px;font-weight:700;text-align:center}
+.fc .cl i{font-style:normal;margin-right:6px}
+.fc-gap{text-align:center;letter-spacing:.3em;color:var(--mute);line-height:1}
+.fc-sg{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:6px}
+.fc-sg>div{display:grid;gap:1px}
+.fc-sg .ln{margin-top:2px}
+
+/* ---------- «Сертификат соответствия» ---------- */
+.fs{padding:22px 28px 18px;font-size:13.5px;line-height:1.36}
+.fs-top{display:flex;align-items:center;justify-content:space-between;font-weight:700;letter-spacing:.06em}
+.fs .eac{display:grid;place-items:center;width:46px;height:34px;border:2px solid var(--ink);font-style:normal;font-weight:700;font-size:15px;letter-spacing:.02em;transition:border-color .45s}
+.fs h2{margin-top:8px;font-size:20px;font-weight:700;letter-spacing:.04em;text-align:center}
+.fs-no{display:flex;justify-content:space-between;gap:12px;margin:6px 0 10px;padding-bottom:8px;border-bottom:2px solid var(--ink);font-weight:700}
+.fs-f{margin-top:7px}
+.fs-f b{display:block;margin-bottom:3px;font-size:12.5px;letter-spacing:.03em;color:var(--mute)}
+.fs-term{margin-top:12px;padding:7px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);font-weight:700;text-align:center}
+.fs-sg{display:grid;grid-template-columns:1fr 1fr 40px;gap:20px;align-items:end;margin-top:12px}
+.fs-sg>div{display:grid;gap:2px}
+.fs-sg>div>span:first-child{font-size:12.5px;color:var(--mute)}
+
+/* ---------- a phone: the sheet is laid out again for its narrow width (class set by the script), the type stays readable ---------- */
+.sheet.narrow .fi,.sheet.narrow .fa,.sheet.narrow .fs{padding:16px 14px 14px}
+.sheet.narrow .fc{padding:16px 16px 14px}
+.sheet.narrow .fc h2{margin-top:0}
+.sheet.narrow .doc .ln{flex-wrap:wrap;gap:4px 8px}
+.sheet.narrow .fi-bank{font-size:12px}
+.sheet.narrow .fi-bank td{padding:2px 4px}
+.sheet.narrow .fi-bank .lb{width:auto}
+.sheet.narrow .fi-bank .vl{width:auto}
+.sheet.narrow .fi-t{font-size:16px}
+.sheet.narrow .fi-kv{grid-template-columns:1fr;gap:0}
+.sheet.narrow .fi-tb{font-size:12.5px}
+.sheet.narrow .fi-tb th,.sheet.narrow .fi-tb td{padding:3px 4px}
+.sheet.narrow .fi-sg{grid-template-columns:1fr 1fr;gap:10px 14px}
+.sheet.narrow .fi-sg .stamp{grid-column:1/-1;justify-self:end;margin-top:-6px}
+/* the empty half of the akt is not shown on a phone: the supplier's half keeps its columns */
+.sheet.narrow .fa .our{display:none}
+.sheet.narrow .fa-tb col.c1{width:72px}
+.sheet.narrow .fa-tb col.c3{width:84px}
+.sheet.narrow .fa-tb{font-size:12.5px}
+.sheet.narrow .fa-sg,.sheet.narrow .fc-sg{grid-template-columns:1fr;gap:12px}
+.sheet.narrow .fc-dr{position:static;margin-bottom:4px;text-align:right}
+.sheet.narrow .fc-pre,.sheet.narrow .fc .cl{text-align:left}
+.sheet.narrow .fs-no{flex-direction:column;gap:2px}
+.sheet.narrow .fs-sg{grid-template-columns:1fr;gap:12px}
+.sheet.narrow .doc.mail{padding:20px 18px 22px}
+.sheet.narrow .doc.mail .k{display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone}
